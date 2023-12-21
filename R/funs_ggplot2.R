@@ -51,3 +51,26 @@ theme_kbn <-
     
     ret
   }
+
+kbn_colors <- 
+  function(
+    n = 4, 
+    begin = 0.05, 
+    end = 0.65,
+    view = FALSE
+  ){
+    
+    inferno_pal <- 
+      viridisLite::rocket(n = n, begin = begin, end = end)
+    
+    if (view) {
+      
+      monochromeR::view_palette(inferno_pal)
+      
+    } else {
+      
+      return(inferno_pal)
+      
+    }
+    
+  }
