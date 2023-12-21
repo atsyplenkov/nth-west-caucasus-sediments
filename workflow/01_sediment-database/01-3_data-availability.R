@@ -1,17 +1,14 @@
 # libraries ---------------------------------------------------------------
 library(tidyverse)
-library(atslib)
 library(qs)
+library(here)
 
-source("R/_functions.R")
+source(here("R", "funs_ggplot2.R"))
 
 # ggplot2 setup -----------------------------------------------------------
-theme_set(
-  theme_ijsr()
-)
+theme_set(theme_kbn())
 
-my_pal <- 
-  c("#f0271e", "#638273")
+my_pal <- kbn_colors(n = 2)
 
 # load data ---------------------------------------------------------------
 ssd <- 

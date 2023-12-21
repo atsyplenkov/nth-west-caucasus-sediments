@@ -10,6 +10,7 @@ library(mapview)
 library(sf)
 library(rmapshaper)
 library(mapview)
+library(data.table)
 
 source(here("R", "funs_ggplot2.R"))
 source(here("R", "funs_excel.R"))
@@ -52,7 +53,11 @@ aoi <-
 
 # 3. Reservoir check ------------------------------------------------------
 ww_reservoirs <- 
-  st_read("D:/WORK/00_GLOBAL/WaterWatch/shp/reservoirs-locations-v1.0.shp")
+  st_read(
+    here(
+      "data", "vector", "water-watch", "reservoirs-locations-v1.0.shp"
+    )
+  )
 
 manual_reservoirs <- 
   c(83265, 83266, 83269, 83444)
@@ -92,7 +97,6 @@ ssd_id <-
   filter(n > 20) %>% 
   pull(id) %>% 
   unique()
-
 
 # 5. Explore --------------------------------------------------------------
 ws_st %>% 
@@ -135,20 +139,56 @@ ssd_table <-
   ) %>% 
   arrange(river, area)
 
-# 6. Save -----------------------------------------------------------------
+# 6. Vectors --------------------------------------------------------------
+ws_st_status <- 
+  ws_st |> 
+  mutate(
+    status = ifelse(
+      id %in% ssd_id,
+      "pristine",
+      "altered"
+    ),
+    .after = "area"
+  )
+
+kbn_gages <- 
+  st_read(
+    here("data", "vector", "kbn_gages", "kbn_gages.shp")
+  ) |> 
+  mutate(
+    status = ifelse(
+      id %in% ssd_id,
+      "pristine",
+      "altered"
+    ),
+    .after = "id"
+  )
+
+# Save
+st_write(
+  kbn_gages,
+  here("data", "vector", "kbn_gages", "kbn_gages.shp"),
+  delete_dsn = T
+)
+
+st_write(
+  ws_st_status,
+  here("data", "vector", "kbn_ws_30dec", "kbn_ws_30dec.shp"),
+  delete_dsn = T
+)
+
+
+# 7. Save -----------------------------------------------------------------
 # Table
 writexl::write_xlsx(
   ssd_table,
-  here("R", "01_Sediment-database", "tables", "SSD-table-1.xlsx")
+  here("workflow", "01_sediment-database", "tables", "SSD-table-1.xlsx")
 )
 
-# Database
-qsave(ssd_selected,
-      here("R", "01_Sediment-database", "data", "SSD-yr-sel_1mar23.qs"))
-
-# Watersheds
-ws_st %>% 
-  dplyr::filter(id %in% ssd_id) %>% 
-  st_write(
-    dsn = here("R", "01_Sediment-database", "data", "SSD-ws-sel_1mar23.shp")
+# Annual database
+qsave(
+  ssd_selected,
+  here(
+    "workflow", "01_sediment-database", "data", "SSD-yr-sel_21dec23.qs"
   )
+)
