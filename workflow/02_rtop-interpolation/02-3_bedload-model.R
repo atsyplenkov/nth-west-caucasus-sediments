@@ -1,6 +1,6 @@
 library(tidyverse)
 library(readxl)
-library(ggpmisc)
+library(hydroGOF)
 
 # 1) Load Turowski data ---------------------------------------------------
 turowski_all <- 
@@ -19,13 +19,24 @@ hyperbolic_model <-
 summary(hyperbolic_model)
 
 # Plot the data and hyperbolic fit
-plot(data$mean_sus_load_kgsec, data$mean_bedload_fraction, 
-     xlab = "mean_sus_load_kgsec", ylab = "mean_bedload_fraction", 
+plot(turowski_all$mean_sus_load_kgsec, 
+     turowski_all$mean_bedload_fraction, 
+     xlab = "mean_sus_load_kgsec", 
+     ylab = "mean_bedload_fraction", 
      main = "Hyperbolic Fit", col = "blue")
-lines(data$mean_sus_load_kgsec, predict(hyperbolic_model), col = "red", lwd = 2)
+lines(turowski_all$mean_sus_load_kgsec, 
+      predict(hyperbolic_model), col = "red", lwd = 2)
 
 # 3) Quality assessment ---------------------------------------------------
 turowski_all$.predict <- 
   predict(hyperbolic_model)
 
-hydroGOF::gof(data$.predict, data$mean_bedload_fraction)
+hydroGOF::gof(turowski_all$.predict, turowski_all$mean_bedload_fraction)
+
+# 4) Save model -----------------------------------------------------------
+library(qs)
+
+qs::qsave(
+  hyperbolic_model,
+  "workflow/02_rtop-interpolation/data/bedload_model.qs"
+)
