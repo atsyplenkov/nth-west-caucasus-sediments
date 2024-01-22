@@ -32,7 +32,7 @@ rtop_pred <-
     ssd_sim = var1.pred^(1/0.05),
     ssd_sim = ssd_sim * area / 31536,
     bed_f = 28.21 / (95.25 + ssd_sim),
-    tot_sd = ssd_sim + ssd_sim * bed_f,
+    tot_sd = ssd_sim / (1 - bed_f),
     ssd_tyr = ssd_sim * 31536 / 10^6,
     tot_tyr = tot_sd * 31536 / 10^6
   )
@@ -59,13 +59,12 @@ krasn_inflow_summary <-
   mutate(
     year_period = case_when(
       between(year, 2005, 2016) ~ "2005-2016",
-      between(year, 2016, 2021) ~ "2016-2021",
+      between(year, 2017, 2021) ~ "2016-2021",
       TRUE ~ NA_character_
     )
   ) |> 
   filter(!is.na(year_period)) |> 
   summarise(
-    n = n(),
     area = unique(area),
     mean_ssd = mean(ssd_sim),
     mean_bf = mean(bed_f),
@@ -75,21 +74,40 @@ krasn_inflow_summary <-
   )
 
 krasn_inflow_summary |> 
-  filter(id != "83361") |> 
+  # filter(id != "83361") |>
   group_by(year_period) |> 
   summarise(
     ss_flux = sum(tot_ssd_tyr),
+    bs_flux = sum(tot_sd_tyr) - sum(tot_ssd_tyr),
     s_flux = sum(tot_sd_tyr)
   ) |> 
   mutate(
-    ss_vol = sed_to_vol(ss_flux),
-    s_vol = sed_to_vol(s_flux)
+    ss_vol = ss_flux / 0.96,
+    bs_vol = bs_flux / 1.5,
+    s_vol = s_flux / 1.3
   )
+  # mutate(
+  #   ss_vol = sed_to_vol(ss_flux),
+  #   s_vol = sed_to_vol(s_flux)
+  # )
 
 krasn_inflow_summary |> 
   filter(id == "83361") |>
   group_by(year_period) |> 
   summarise(
+    ss_flux = sum(tot_ssd_tyr/2),
+    s_flux = sum(tot_sd_tyr/2)
+  ) |> 
+  mutate(
+    ss_vol = sed_to_vol(ss_flux),
+    s_vol = sed_to_vol(s_flux)
+  )
+
+# Kuban only
+krasn_inflow_summary |> 
+  filter(id %in% c("83174", "83314")) |>
+  group_by(year_period) |> 
+  summarise(
     ss_flux = sum(tot_ssd_tyr),
     s_flux = sum(tot_sd_tyr)
   ) |> 
@@ -97,7 +115,6 @@ krasn_inflow_summary |>
     ss_vol = sed_to_vol(ss_flux),
     s_vol = sed_to_vol(s_flux)
   )
-
 
 krasn_inflow |> 
   filter(id == "83361") |>  
