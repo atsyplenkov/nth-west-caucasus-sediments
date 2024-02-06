@@ -75,7 +75,17 @@ krasn_inflow_summary <-
 
 krasn_inflow_summary |> 
   # filter(id != "83361") |>
-  group_by(year_period) |> 
+  mutate(
+    tot_sd_tyr = case_when(
+      id == "83361" ~ tot_sd_tyr / 2,
+      TRUE ~ tot_sd_tyr)
+  ) |> 
+  mutate(
+    tot_ssd_tyr  = case_when(
+      id == "83361" ~ tot_ssd_tyr  / 2,
+      TRUE ~ tot_ssd_tyr )
+  ) |> 
+group_by(year_period) |> 
   summarise(
     ss_flux = sum(tot_ssd_tyr),
     bs_flux = sum(tot_sd_tyr) - sum(tot_ssd_tyr),
@@ -84,12 +94,13 @@ krasn_inflow_summary |>
   mutate(
     ss_vol = ss_flux / 0.96,
     bs_vol = bs_flux / 1.5,
-    s_vol = s_flux / 1.3
+    # s_vol = s_flux / 1.3
+    s_vol = ss_vol + bs_vol
   )
-  # mutate(
-  #   ss_vol = sed_to_vol(ss_flux),
-  #   s_vol = sed_to_vol(s_flux)
-  # )
+  mutate(
+    ss_vol = sed_to_vol(ss_flux),
+    s_vol = sed_to_vol(s_flux)
+  )
 
 krasn_inflow_summary |> 
   filter(id == "83361") |>
