@@ -8,7 +8,8 @@ gswe_poly <-
     "data/vector/gswe.gpkg",
     layer = "gswe"
   ) |> 
-  st_transform(32637)
+  st_transform(32637) |> 
+  filter(part == "north")
 
 # estimate polygon area
 gswe_poly$area <- 
