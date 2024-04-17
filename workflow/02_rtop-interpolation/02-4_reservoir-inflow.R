@@ -29,7 +29,7 @@ rtop_pred <-
     year,
     id,
     area,
-    ssd_sim = var1.pred^(1/0.05),
+    ssd_sim = var1.pred^(1/0.05), # Mind the Box-Cox lambda
     ssd_sim = ssd_sim * area / 31536,
     bed_f = 28.21 / (95.25 + ssd_sim),
     tot_sd = ssd_sim / (1 - bed_f),
@@ -93,14 +93,14 @@ group_by(year_period) |>
   ) |> 
   mutate(
     ss_vol = ss_flux / 0.96,
-    bs_vol = bs_flux / 1.5,
+    bs_vol = bs_flux / 1.7,
     # s_vol = s_flux / 1.3
     s_vol = ss_vol + bs_vol
   )
-  mutate(
-    ss_vol = sed_to_vol(ss_flux),
-    s_vol = sed_to_vol(s_flux)
-  )
+  # mutate(
+  #   ss_vol = sed_to_vol(ss_flux),
+  #   s_vol = sed_to_vol(s_flux)
+  # )
 
 krasn_inflow_summary |> 
   filter(id == "83361") |>
@@ -127,9 +127,9 @@ krasn_inflow_summary |>
     s_vol = sed_to_vol(s_flux)
   )
 
-krasn_inflow |> 
-  filter(id == "83361") |>  
-  filter(year > 2000) |>  
+rtop_pred |> 
+  filter(id == "83183") |>  
+  # filter(year > 2000) |>  
   mutate(
     ssy = ssd_sim * 31536 / area
   ) |> 

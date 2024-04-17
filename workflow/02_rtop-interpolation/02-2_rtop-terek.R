@@ -2,11 +2,17 @@ library(tidyverse)
 library(sf)
 library(here)
 library(rmapshaper)
+library(patchwork)
 
 source(here("R", "funs_rtop.R"))
 source(here("R", "funs_ggplot2.R"))
 
 theme_set(theme_kbn())
+
+## Metrics
+source("R/funs_utils.R")
+
+val_metrics <- metric_set(ccc, rsq, nse)
 
 # 1) Point data ---------------------------------------------------------
 kbn_gages <- 
@@ -72,12 +78,25 @@ ws_pred <-
   filter(!str_detect(id, "-")) |> 
   bind_rows(ws_new)
 
-# Gauging station density
+# Original Gauging station density
+region_area_original <- 
+  ws_obs |> 
+  filter(!str_detect(id, "-")) |> 
+  terra::vect() |> 
+  terra::aggregate() |> 
+  terra::expanse("km")
+
+ws_obs |> 
+  filter(!str_detect(id, "-")) |> 
+  nrow() |> 
+  magrittr::divide_by(region_area_original / 10^3)
+
+# New Gauging station density
 region_area <- 
   ws_obs |> 
-  ms_dissolve() |> 
-  st_area() |> 
-  magrittr::divide_by(10^6) 
+  terra::vect() |> 
+  terra::aggregate() |> 
+  terra::expanse("km")
 
 nrow(ws_obs) / (region_area / 10^3)
 
@@ -270,7 +289,7 @@ ssd_uk2 <-
 
 ssd_uk2 |> 
   unnest(c(.cv_res)) |> 
-  ggdist::mean_qi(CCC)
+  ggdist::median_qi(CCC)
 
 ssd_uk2 |>
   select(.cv_df) |> 
@@ -283,52 +302,59 @@ ssd_uk2_cv <-
   select(.cv_df) |> 
   unnest(c(.cv_df)) 
 
-ssd_uk2_cv |> 
-  yardstick::ccc(truth = obs, estimate = var1.pred)
+cv_metrics <- 
+  ssd_uk2_cv |> 
+  val_metrics(obs, var1.pred) |> 
+  transmute(
+    .metric = c("CCC", "R^2", "NSE"),
+    .metric = paste0("bold(", .metric, ")"),
+    .estimate = round(.estimate, 2)
+  )
 
-ssd_uk2_cv |> 
-  yardstick::rsq(truth = obs, estimate = var1.pred)
-
-hydroGOF::NSE(ssd_uk2_cv$var1.pred, ssd_uk2_cv$obs)
-
-cv_scatter <- 
+cv_scatter <-
   ssd_uk2 |>
-  select(.cv_df) |> 
-  unnest(c(.cv_df)) |> 
-  mutate(
-    facet = "(a) CV scatterplot"
-  ) |> 
-  ggplot(
-    aes(
-      x = obs,
-      y = var1.pred
-    )
+  select(.cv_df) |>
+  unnest(c(.cv_df)) |>
+  mutate(facet = "(a) Cross-Validation") |>
+  ggplot(aes(x = obs,
+             y = var1.pred)) +
+  geom_abline(linetype = "dashed") +
+  geom_point(alpha = 0.25) +
+  ggpp::geom_table_npc(
+    data = cv_metrics,
+    label = list(cv_metrics),
+    npcx = 0.95,
+    npcy = 0.05,
+    parse = T,
+    table.colnames = F,
+    family = "Merriweather",
+    table.theme = ttheme_gtminimal
   ) +
-  geom_abline(
-    linetype = "dashed" 
+  lims(
+    x = c(1.1, 1.55),
+    y = c(1.1, 1.55)
   ) +
-  geom_point(
-    alpha = 0.25
-  ) +
-  tune::coord_obs_pred() +
-  labs(
-    x = "**Observed _SSD_**",
-    y = "**Predicted _SSD_**"
-  ) +
-  facet_wrap(~facet)
+  labs(x = "**Observed _SSD_**",
+       y = "**Predicted _SSD_**") +
+  facet_wrap( ~ facet)
 
 cv_hist <- 
   ssd_uk2 |>
   select(.cv_df) |> 
   unnest(c(.cv_df)) |>
-  mutate(facet = "(b) CV residuals") |> 
+  mutate(facet = "(b) Cross-Validation") |> 
   ggplot(
     aes(
       x = obs - var1.pred
     )
   ) +
-  geom_histogram(
-    bins = 21
+  geom_density(
+    aes(y = ..scaled..),
+    fill = "grey70"
+  ) +
+  geom_vline(
+    xintercept = 0,
+    linetype = "dashed"
   ) +
   scale_x_continuous(
     breaks = scales::pretty_breaks(5),
@@ -336,25 +362,28 @@ cv_hist <-
     expand = expansion(mult = c(0.01, 0.01))
   ) +
   scale_y_continuous(
-    breaks = scales::pretty_breaks(),
-    expand = expansion(mult = c(0, 0.1))
+    breaks = scales::breaks_extended(n = 5),
+    expand = expansion(mult = c(0, 0.01))
   ) +
   labs(
     x = "**Cross-validation residuals**",
-    y = "**Count**"
+    y = ""
   ) +
-  facet_wrap(~facet)
-
-library(patchwork)
+  facet_wrap(~facet) +
+  theme(
+    panel.grid.major.y = element_blank()
+  )
 
 cv_plot <- 
   cv_scatter + cv_hist
 
+cv_plot
+
 ggmw::mw_save(
   here("workflow/02_rtop-interpolation/figures/cv_qa.png"),
   cv_plot,
-  w = 16,
-  h = 8
+  w = 20,
+  h = 12
 )
 
 # Save --------------------------------------------------------------------
@@ -371,6 +400,25 @@ krasnodar_tyr <-
     ssd_tyr = ssd_mean * 31536 / 10^6
   ) |> 
   drop_na(ssd_mean)
+
+model_area <- 
+  ws_pred |> 
+  filter(
+    id %in% c(
+      "Psekups",
+      "Shunduk",
+      "Apchas",
+      "Marta",
+      "83387",
+      "83361",
+      "83314",
+      "83174",
+      "83413"
+    )
+  ) |> 
+  terra::vect() |> 
+  terra::aggregate() |> 
+  terra::expanse("km")
 
 krasnodar_db <- 
   ssd_uk2$.pred_df |> 
@@ -400,19 +448,35 @@ krasnodar_db_tot <-
   group_by(year) |> 
   reframe(
     upstream_tyr = sum(ssd_tyr)
-  ) 
+  ) |> 
+  # Adjust to bigger area
+  mutate(
+    upstream_ssy = 10^6 * upstream_tyr/model_area,
+    upstream_tyr_new = upstream_ssy * 45900 / 10^6
+  )
 
 krasnodar_tyr |>
-  filter(year < 1974) |> 
-  filter(year > 1945) |>
+  filter(year < 1945) |> 
+  # filter(year > 1945) |>
+  left_join(
+    krasnodar_db_tot,
+    by = join_by(year)
+  ) |> 
+  mutate(across(c(ssd_tyr, upstream_tyr_new), ~{.x^0.05})) |>
+  val_metrics(ssd_tyr, upstream_tyr_new)
+
+
+krasnodar_tyr |>
+  # filter(year > 1945 & year < 1973) |> 
+  filter(year < 1945) |>
   left_join(
     krasnodar_db_tot,
     by = join_by(year)
   ) |> 
   ggplot(
     aes(
-      y = log10(upstream_tyr),
-      x = log10(ssd_tyr)
+      y = (upstream_tyr_new)^0.05,
+      x = (ssd_tyr)^0.05
     )
   ) +
   geom_abline(slope = 1) +
@@ -423,30 +487,143 @@ krasnodar_tyr |>
     )
   ) +
   ggpmisc::stat_poly_eq(
-    aes(label =  paste(stat(eq.label),
-                       stat(adj.rr.label),
-                       sep = "~~~~")),
-    formula = y ~ x 
+    formula = y~x,
+    aes(label =  paste(stat(eq.label)))
   ) +
   geom_smooth(
-    method = "lm",
-    formula = y ~ x
+    formula = y~x,
+    method = "lm"
   ) +
   tune::coord_obs_pred()
 
-df <- 
+
+krasnodar_metrics <- 
   krasnodar_tyr |>
-  filter(year < 1974) |> 
-  filter(year > 1945) |>
+  filter(year < 1945) |> 
+  # filter(year > 1945) |>
   left_join(
     krasnodar_db_tot,
     by = join_by(year)
+  ) |> 
+  mutate(across(c(ssd_tyr, upstream_tyr_new), ~{.x^0.05})) |>  
+  val_metrics(ssd_tyr, upstream_tyr_new) |> 
+  transmute(
+    .metric = c("CCC", "R^2", "NSE"),
+    .metric = paste0("bold(", .metric, ")"),
+    .estimate = round(.estimate, 2)
   )
 
-hydroGOF::NSE(
-  sim = log10(df$upstream_tyr), 
-  obs = log10(df$ssd_tyr)
+val_scatter <-
+  krasnodar_tyr |>
+  # filter(year > 1945 & year < 1973) |>
+  filter(year < 1945) |>
+  left_join(krasnodar_db_tot,
+            by = join_by(year)) |>
+  mutate(facet = "(b) g/s Krasnodar City") |>
+  ggplot(aes(
+    y = (upstream_tyr_new) ^ 0.05,
+    x = (ssd_tyr) ^ 0.05
+  )) +
+  stat_poly_line(color = "firebrick4") +
+  stat_poly_eq(use_label("eq"),
+               family = "Merriweather") +
+  geom_abline(linetype = "dashed") +
+  geom_point(alpha = 0.65) +
+  ggpp::geom_table_npc(
+    data = krasnodar_metrics,
+    label = list(krasnodar_metrics),
+    npcx = 0.95,
+    npcy = 0.05,
+    parse = T,
+    table.colnames = F,
+    family = "Merriweather",
+    table.theme = ttheme_gtminimal
+  ) +
+  ggrepel::geom_text_repel(aes(label = year),
+                           family = "Merriweather",
+                           size = 3,) +
+  lims(
+    x = c(1.05, 1.15),
+    y = c(1.05, 1.15)
+  ) +
+  labs(x = "**Observed _SSD_**",
+       y = "**Predicted _SSD_**") +
+  facet_wrap(~ facet)
+
+val_hist <-
+  krasnodar_tyr |>
+  # filter(year > 1945 & year < 1973) |> 
+  filter(year < 1945) |>
+  left_join(
+    krasnodar_db_tot,
+    by = join_by(year)
+  ) |> 
+  mutate(facet = "(d) g/s Krasnodar City") |>
+  ggplot(
+    aes(
+      x = (ssd_tyr)^0.05 - (upstream_tyr_new)^0.05
+    )
+  ) +
+  geom_density(
+    aes(y = ..scaled..),
+    fill = "grey70"
+  ) +
+  geom_vline(
+    xintercept = 0,
+    linetype = "dashed"
+  ) +
+  scale_x_continuous(
+    breaks = scales::pretty_breaks(5),
+    limits = c(-0.02, 0.07),
+    expand = expansion(mult = c(0, 0))
+  ) +
+  scale_y_continuous(
+    breaks = scales::breaks_extended(n = 5),
+    expand = expansion(mult = c(0, 0.01))
+  ) +
+  labs(
+    x = "**Validation residuals**",
+    y = ""
+  ) +
+  facet_wrap(~facet) +
+  theme(
+    panel.grid.major.y = element_blank()
+  )
+
+val_hist
+
+# cv_val_plot <- 
+#   (cv_scatter + cv_hist +
+#      plot_layout(
+#        widths = c(2, 1)
+#      )) /
+#   (val_scatter + val_hist +
+#      plot_layout(
+#        widths = c(2, 1)
+#      ))
+# 
+# cv_val_plot
+  
+
+cv_val_plot <- 
+  cv_scatter + val_scatter + (cv_hist / val_hist)
+
+cv_val_plot
+
+ggmw::mw_save(
+  here("workflow/02_rtop-interpolation/figures/cv_qa.png"),
+  cv_val_plot,
+  w = 25,
+  h = 10
 )
+
+
+
+
+
+
+
+
 
 # Validation --------------------------------------------------------------
 ssd_uk2$.pred_df |> 
