@@ -3,6 +3,8 @@ library(sf)
 library(here)
 library(rmapshaper)
 library(patchwork)
+library(yardstick)
+library(tidyhydro)
 
 source(here("R", "funs_rtop.R"))
 source(here("R", "funs_ggplot2.R"))
@@ -10,7 +12,7 @@ source(here("R", "funs_ggplot2.R"))
 theme_set(theme_kbn())
 
 ## Metrics
-source("R/funs_utils.R")
+# source("R/funs_utils.R")
 
 val_metrics <- metric_set(ccc, rsq, nse)
 
@@ -342,7 +344,7 @@ cv_hist <-
   ssd_uk2 |>
   select(.cv_df) |> 
   unnest(c(.cv_df)) |>
-  mutate(facet = "(b) Cross-Validation") |> 
+  mutate(facet = "(c) Cross-Validation") |> 
   ggplot(
     aes(
       x = obs - var1.pred
@@ -387,12 +389,17 @@ ggmw::mw_save(
 )
 
 # Save --------------------------------------------------------------------
-qs::qsave(
-  ssd_uk2,
-  here("workflow/02_rtop-interpolation/data/rtop_cv_7jan23.qs")
-)
+# qs::qsave(
+  # ssd_uk2,
+  # here("workflow/02_rtop-interpolation/data/rtop_cv_7jan23.qs")
+# )
 
 # Krasnodar gage validation -----------------------------------------------
+library(ggpmisc)
+
+ssd_uk2 <- 
+  qs::qread(here("workflow/02_rtop-interpolation/data/rtop_cv_7jan23.qs"))
+
 krasnodar_tyr <- 
   sed_data |> 
   filter(id == "83183") |> 
@@ -550,6 +557,8 @@ val_scatter <-
        y = "**Predicted _SSD_**") +
   facet_wrap(~ facet)
 
+val_scatter
+
 val_hist <-
   krasnodar_tyr |>
   # filter(year > 1945 & year < 1973) |> 
@@ -617,10 +626,21 @@ ggmw::mw_save(
   h = 10
 )
 
+# How much is the model underestimates? -----------------------------------
+val_eq <- \(y) (y - 0.174)/0.859
 
-
-
-
+data.frame(
+  obs = seq(1.045, 1.130, length.out = 100)
+) |> 
+  mutate(
+    sim = val_eq(obs),
+    sim = sim^(1/0.05),
+    obs = obs^(1/0.05),
+    error = 100 * (sim-obs)/obs
+  ) |> 
+  reframe(
+    mean(error)
+  )
 
 
 
