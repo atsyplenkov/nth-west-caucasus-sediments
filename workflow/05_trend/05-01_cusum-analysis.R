@@ -9,10 +9,10 @@ library(geomtextpath)
 source(here("R", "funs_ggplot2.R"))
 
 theme_set(theme_kbn())
-theme_replace(
-  axis.title.y = element_text(size = rel(0.9), 
-                              angle = 90)
-)
+# theme_replace(
+#   axis.title.y = element_text(size = rel(0.9), 
+#                               angle = 90)
+# )
 
 clrs <- MetBrewer::met.brewer("Johnson", n = 8)
 clrs[3] <- "grey10"
@@ -120,6 +120,22 @@ krasn_both <-
       id == "83387" ~ glue::glue("Pshish (No. {id})"),
       TRUE ~ id
     )
+  )
+
+# Save
+krasn_both |> 
+  transmute(
+    Year = year,
+    id,
+    river = str_split_i(id, " \\(", i = 1),
+    Area = area,
+    SSDBoth,
+    SSDFlag,
+    BedloadF = bed_f,
+    SDTotal = SSDBoth / (1 - bed_f)
+  ) |> 
+  qs::qsave(
+    "workflow/05_trend/data/ssd_both.qs"
   )
 
 krasn_inflow_summary <- 
@@ -358,7 +374,8 @@ krasn_cusum_plot <-
   ) +
   labs(
     x = "",
-    y = TeX(r'($\frac{\sum{K-1}}{Cv}$)')
+    # y = TeX(r'($\frac{\sum{K-1}}{Cv}$)')
+    y = "**CUSUM _SSD_**"
   ) +
   guides(
     fill = guide_legend(
@@ -374,3 +391,50 @@ ggmw::mw_save(
   krasn_cusum_plot,
   w = 22, h = 13
 )
+
+# Trends ------------------------------------------------------------------
+taylor_periods <- 
+  taylor_res |> 
+  select(id, label) |> 
+  bind_rows(
+    data.frame(
+      id = rep(unique(taylor_res$id), 2),
+      label = c(rep(1925, 8), rep(2021, 8))
+    )
+  ) |> 
+  arrange(id, label) |> 
+  group_by(id) |> 
+  mutate(
+    Period = data.table::rleid(label),
+    Period = ifelse(label == 2021, NA_integer_, Period)
+  ) |> 
+  complete(label = seq(1925, 2021, by = 1)) |> 
+  mutate(Period = zoo::na.locf(Period)) |> 
+  ungroup()
+
+krasn_period <- 
+  krasn_both |> 
+  left_join(
+    taylor_periods |> 
+      select(id, year = label, Period),
+    by = join_by(id, year)
+  )
+
+krasn_period |> 
+  ggplot(
+    aes(
+      x = year,
+      y = SSDBoth,
+      fill = as_factor(Period)
+    )
+  ) +
+  geom_point(
+    shape = 21,
+    stroke = rel(0.25)
+  ) +
+  geom_smooth(
+    method = "lm",
+    se = F
+  ) +
+  scale_y_log10()+
+  facet_wrap(~id, scales = "free_y")

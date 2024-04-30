@@ -29,9 +29,9 @@ theme_kbn <-
         strip.background = element_rect(fill = "grey85", colour = NA),
         axis.ticks = element_blank(),
         # axis.title.x = element_text(margin = margin(t = 10)),
-        axis.title.x = ggtext::element_markdown(size = rel(0.9), margin = margin(t = 10)),
+        axis.title.x = ggtext::element_markdown(size = rel(0.9)),
         # axis.title.y = element_text(margin = margin(r = 10)),
-        axis.title.y = ggtext::element_markdown(size = rel(0.9), margin = margin(r = 10)),
+        axis.title.y = ggtext::element_markdown(size = rel(0.9)),
         axis.text = element_text(family = "Merriweather", face = "plain"),
         axis.title = element_text(family = "Merriweather", face = "plain"),
         legend.key = element_blank(),
@@ -48,7 +48,8 @@ theme_kbn <-
         legend.key.height = unit(0.7, "lines"),
         legend.key.width = unit(0.7, "lines"),
         legend.spacing = unit(0.3, "lines"),
-        legend.background = element_blank()
+        legend.background = element_blank(),
+        plot.margin = margin(t = 5.5, r = 12, b = 5.5, l = 5.5)
       )
     
     ret

@@ -1,0 +1,128 @@
+This file contains the citations for the data downloaded from the GLIMS
+Glacier Database.  All data are in the longitude/latitude coordinate system
+on the WGS-84 datum.
+
+Field names in the downloaded file are documented at
+  http://www.glims.org/MapsAndDocs/downloaded_field_desc.html
+
+When citing GLIMS data, please be sure to include all the information in
+the examples below, including the analyst's name.
+
+When referring to the GLIMS Initiative in general, please cite
+
+   Raup, B.H.; A. Racoviteanu; S.J.S. Khalsa; C. Helm; R. Armstrong; Y.
+   Arnaud (2007).  "The GLIMS Geospatial Glacier Database: a New Tool for
+   Studying Glacier Change".  Global and Planetary Change 56:101--110.
+   (doi:10.1016/j.gloplacha.2006.07.018)
+
+For the complete set of GLIMS glacier data (when using it for a global
+study of glaciers, for example), please cite
+
+GLIMS and NSIDC (2005, updated 2021): Global Land Ice Measurements
+from Space glacier database.  Compiled and made available by the
+international GLIMS community and the National Snow and Ice Data Center,
+Boulder CO, U.S.A.  DOI:10.7265/N5V98602
+
+
+For Analysis_IDs in the range 1504--1554, the appropriate citation is
+
+  Khromova, Tatyana (submitter); Nosenko, Gennadi (Gennady) (analyst(s)), 2005.
+  GLIMS Glacier Database. Boulder, CO.
+  National Snow and Ice Data Center.  http://dx.doi.org/10.7265/N5V98602
+
+For Analysis_IDs in the range 1579--1594, the appropriate citation is
+
+  Khromova, Tatyana (submitter); Nosenko, Gennadi (Gennady) (analyst(s)), 2005.
+  GLIMS Glacier Database. Boulder, CO.
+  National Snow and Ice Data Center.  http://dx.doi.org/10.7265/N5V98602
+
+For Analysis_IDs in the range 1625--1677, the appropriate citation is
+
+  Khromova, Tatyana (submitter); Nosenko, Gennadi (Gennady) (analyst(s)), 2005.
+  GLIMS Glacier Database. Boulder, CO.
+  National Snow and Ice Data Center.  http://dx.doi.org/10.7265/N5V98602
+
+For Analysis_IDs in the range 1683--1695, the appropriate citation is
+
+  Khromova, Tatyana (submitter); Nosenko, Gennadi (Gennady) (analyst(s)), 2005.
+  GLIMS Glacier Database. Boulder, CO.
+  National Snow and Ice Data Center.  http://dx.doi.org/10.7265/N5V98602
+
+For Analysis_IDs in the range 1754--1765, the appropriate citation is
+
+  Khromova, Tatyana (submitter); Nosenko, Gennadi (Gennady) (analyst(s)), 2005.
+  GLIMS Glacier Database. Boulder, CO.
+  National Snow and Ice Data Center.  http://dx.doi.org/10.7265/N5V98602
+
+For Analysis_IDs in the range 51715--51718, the appropriate citation is
+
+  Khromova, Tatyana (submitter); Khromova, Tatyana (analyst(s)), 2006.
+  GLIMS Glacier Database. Boulder, CO.
+  National Snow and Ice Data Center.  http://dx.doi.org/10.7265/N5V98602
+
+For Analysis_IDs in the range 52593--53055, the appropriate citation is
+
+  Khromova, Tatyana (submitter); Seliverstov, Yriy (analyst(s)), 2006.
+  GLIMS Glacier Database. Boulder, CO.
+  National Snow and Ice Data Center.  http://dx.doi.org/10.7265/N5V98602
+
+For Analysis_IDs in the range 57094--57127, the appropriate citation is
+
+  Khromova, Tatyana (submitter); Nosenko, Gennadi (Gennady) (analyst(s)), 2007.
+  GLIMS Glacier Database. Boulder, CO.
+  National Snow and Ice Data Center.  http://dx.doi.org/10.7265/N5V98602
+
+For Analysis_IDs in the range 57128--57146, the appropriate citation is
+
+  Khromova, Tatyana (submitter); Nosenko, Gennadi (Gennady) (analyst(s)), 2007.
+  GLIMS Glacier Database. Boulder, CO.
+  National Snow and Ice Data Center.  http://dx.doi.org/10.7265/N5V98602
+
+For Analysis_IDs in the range 57147--57155, the appropriate citation is
+
+  Khromova, Tatyana (submitter); Khromova, Tatyana (analyst(s)), 2007.
+  GLIMS Glacier Database. Boulder, CO.
+  National Snow and Ice Data Center.  http://dx.doi.org/10.7265/N5V98602
+
+For Analysis_IDs in the range 57156--57174, the appropriate citation is
+
+  Khromova, Tatyana (submitter); Nosenko, Gennadi (Gennady) (analyst(s)), 2007.
+  GLIMS Glacier Database. Boulder, CO.
+  National Snow and Ice Data Center.  http://dx.doi.org/10.7265/N5V98602
+
+For Analysis_IDs in the range 57175--57602, the appropriate citation is
+
+  Khromova, Tatyana (submitter); Nosenko, Gennadi (Gennady) (analyst(s)), 2005.
+  GLIMS Glacier Database. Boulder, CO.
+  National Snow and Ice Data Center.  http://dx.doi.org/10.7265/N5V98602
+
+For Analysis_IDs in the range 57603--57768, the appropriate citation is
+
+  Khromova, Tatyana (submitter); Nosenko, Gennadi (Gennady) (analyst(s)), 2005.
+  GLIMS Glacier Database. Boulder, CO.
+  National Snow and Ice Data Center.  http://dx.doi.org/10.7265/N5V98602
+
+For Analysis_IDs in the range 57769--57779, the appropriate citation is
+
+  Khromova, Tatyana (submitter); Nosenko, Gennadi (Gennady) (analyst(s)), 2007.
+  GLIMS Glacier Database. Boulder, CO.
+  National Snow and Ice Data Center.  http://dx.doi.org/10.7265/N5V98602
+
+For Analysis_IDs in the range 509147--511162, the appropriate citation is
+
+  Tielidze, Levan (submitter); Tielidze, Levan (analyst(s)), 2017.
+  GLIMS Glacier Database. Boulder, CO.
+  National Snow and Ice Data Center.  http://dx.doi.org/10.7265/N5V98602
+
+For Analysis_IDs in the range 511163--513368, the appropriate citation is
+
+  Tielidze, Levan (submitter); Tielidze, Levan (analyst(s)), 2017.
+  GLIMS Glacier Database. Boulder, CO.
+  National Snow and Ice Data Center.  http://dx.doi.org/10.7265/N5V98602
+
+For Analysis_IDs in the range 513369--515717, the appropriate citation is
+
+  Tielidze, Levan (submitter); Tielidze, Levan (analyst(s)), 2017.
+  GLIMS Glacier Database. Boulder, CO.
+  National Snow and Ice Data Center.  http://dx.doi.org/10.7265/N5V98602
+
