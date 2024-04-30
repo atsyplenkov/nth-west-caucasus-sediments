@@ -4,6 +4,9 @@ library(here)
 library(rmapshaper)
 library(terra)
 library(exactextractr)
+library(emmeans)
+library(imputeTS)
+library(santoku)
 
 source("R/funs_ggplot2.R")
 theme_set(theme_kbn())
@@ -408,10 +411,6 @@ glims_complete <-
   ungroup()
 
 # Emmeans -----------------------------------------------------------------
-library(emmeans)
-library(imputeTS)
-library(santoku)
-
 landcover_complete <-
   buchner_areas |>
   group_by(id) |>
@@ -474,9 +473,7 @@ buchner_areas |>
     by = join_by(id)
   ) |>
   mutate(
-    across(c(CroplandArea, ForestArea), ~ {
-      .x / area
-    })
+    across(c(CroplandArea, ForestArea), ~ .x / area)
   ) |>
   pull(ForestArea) |>
   chop(c(0.5), labels = lbl_dash()) |>
