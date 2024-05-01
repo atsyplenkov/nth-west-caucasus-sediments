@@ -1,31 +1,42 @@
 library(ggplot2)
 library(ggtext)
-library(extrafont)
+library(showtext)
+font_add("Merriweather", "Merriweather-Regular.ttf")
+showtext_auto()
 
 # Make labels use Barlow by default
-ggplot2::update_geom_defaults("label", 
-                              list(family = "Merriweather"))
+ggplot2::update_geom_defaults(
+  "label",
+  list(family = "Merriweather")
+)
 
 # https://github.com/andrewheiss/cautioning-canary/blob/master/lib/graphics.R
-theme_kbn <- 
+theme_kbn <-
   function(base_size = 11, base_family = "Merriweather") {
-    
-    ret <- 
+    ret <-
       ggplot2::theme_bw(base_size, base_family) +
       ggplot2::theme(
-        plot.title = element_text(size = rel(1.4), 
-                                  face = "bold",
-                                  family = "Merriweather"),
-        plot.subtitle = ggtext::element_markdown(size = rel(1), face = "plain",
-                                                 family = "Merriweather"),
-        plot.caption = ggtext::element_markdown(size = rel(0.8), color = "grey50", face = "plain",
-                                                family = "Merriweather",
-                                                margin = margin(t = 10)),
+        plot.title = element_text(
+          size = rel(1.4),
+          face = "bold",
+          family = "Merriweather"
+        ),
+        plot.subtitle = ggtext::element_markdown(
+          size = rel(1), face = "plain",
+          family = "Merriweather"
+        ),
+        plot.caption = ggtext::element_markdown(
+          size = rel(0.8), color = "grey50", face = "plain",
+          family = "Merriweather",
+          margin = margin(t = 10)
+        ),
         panel.border = element_rect(color = "grey50", fill = NA, linewidth = 0.15),
         panel.grid = element_line(linewidth = 0.30),
         panel.grid.minor = element_blank(),
-        strip.text = element_text(size = rel(0.9), hjust = 0,
-                                  family = "Merriweather", face = "bold"),
+        strip.text = element_text(
+          size = rel(0.9), hjust = 0,
+          family = "Merriweather", face = "bold"
+        ),
         strip.background = element_rect(fill = "grey85", colour = NA),
         axis.ticks = element_blank(),
         # axis.title.x = element_text(margin = margin(t = 10)),
@@ -51,29 +62,22 @@ theme_kbn <-
         legend.background = element_blank(),
         plot.margin = margin(t = 5.5, r = 12, b = 5.5, l = 5.5)
       )
-    
+
     ret
   }
 
-kbn_colors <- 
+kbn_colors <-
   function(
-    n = 4, 
-    begin = 0.05, 
-    end = 0.65,
-    view = FALSE
-  ){
-    
-    inferno_pal <- 
+      n = 4,
+      begin = 0.05,
+      end = 0.65,
+      view = FALSE) {
+    inferno_pal <-
       viridisLite::rocket(n = n, begin = begin, end = end)
-    
+
     if (view) {
-      
       monochromeR::view_palette(inferno_pal)
-      
     } else {
-      
       return(inferno_pal)
-      
     }
-    
   }

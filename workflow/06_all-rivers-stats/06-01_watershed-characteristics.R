@@ -59,9 +59,12 @@ ws_obs <-
   filter(id %in% rtop_ids)
 
 # Raster paths ------------------------------------------------------------
+global_path <-
+  ifelse(.Platform$OS.type == "unix", "/mnt/e/WORK/00_GLOBAL/", "E:/WORK/00_GLOBAL/")
+
 # WorldClim 2.1
 wc_parent_path <-
-  "E:/WORK/00_GLOBAL/WorldClim/histroical/5min/"
+  paste0(global_path, "WorldClim/histroical/5min/")
 
 prec_files <-
   fs::dir_ls(paste0(wc_parent_path, "/prec"))
@@ -69,16 +72,16 @@ prec_files <-
 # Forest change in 1987-2015
 # Buchner et al., 2020
 forest_file <-
-  "E:/WORK/00_GLOBAL/Caucasus landuse/Caucasus_forest_change_map_1987-2015.tif"
+  paste0(global_path, "Caucasus landuse/Caucasus_forest_change_map_1987-2015.tif")
 
 # Cropland change in 1987-2015
 # Buchner et al., 2020
 cropland_file <-
-  "E:/WORK/00_GLOBAL/Caucasus landuse/Caucasus_cropland_change_map_1987-2015.tif"
+  paste0(global_path, "Caucasus landuse/Caucasus_cropland_change_map_1987-2015.tif")
 
 # Abandond areas
 aal_path <-
-  "E:/WORK/00_GLOBAL/hybrid_map_of_abandoned_arable_land_in_fSU/hybrid map of abandoned arable land.tif"
+  paste0(global_path, "hybrid_map_of_abandoned_arable_land_in_fSU/hybrid map of abandoned arable land.tif")
 
 # Abandoned arable lands  -------------------------------------------------
 aal_rast <-
@@ -340,10 +343,10 @@ buchner_areas <-
   )
 
 # Save
-qs::qsave(
-  buchner_areas,
-  "workflow/06_all-rivers-stats/data/all_landcover_buchner2020.qs"
-)
+# qs::qsave(
+#   buchner_areas,
+#   "workflow/06_all-rivers-stats/data/all_landcover_buchner2020.qs"
+# )
 
 # GLIMS -------------------------------------------------------------------
 library(geos)
