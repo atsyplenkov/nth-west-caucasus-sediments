@@ -7,6 +7,7 @@ library(exactextractr)
 library(emmeans)
 library(imputeTS)
 library(santoku)
+library(sjPlot)
 
 source("R/funs_ggplot2.R")
 theme_set(theme_kbn())
@@ -14,7 +15,15 @@ theme_set(theme_kbn())
 clrs <- MetBrewer::met.brewer("Johnson", n = 8)
 clrs[3] <- "grey10"
 
-# 1) Point data ---------------------------------------------------------
+# Sediment data
+sed_data <-
+  qs::qread(
+    here("workflow", "01_sediment-database", "data", "SSD-yr-all_21dec23.qs")
+  ) |>
+  mutate(id = as.character(id)) |>
+  select(id:ssd_mean)
+
+# Point data ---------------------------------------------------------
 kbn_gages <-
   st_read(
     here("data", "vector", "kbn_gages", "kbn_gages.shp"),
@@ -559,7 +568,8 @@ em_ci <-
     )
   )
 
-em_ci$emmeans |>
+emmeans_model_plot <-
+  em_ci$emmeans |>
   as_tibble() |>
   mutate(
     prec = glue::glue("P = {prec} mm"),
@@ -582,15 +592,17 @@ em_ci$emmeans |>
     aes(y = emmean),
     lwd = rel(1.1)
   ) +
-  coord_cartesian(
-    ylim = c(0, NA),
-    expand = FALSE
-  ) +
+  # coord_cartesian(
+  #   ylim = c(0, NA),
+  #   expand = TRUE
+  # ) +
   scale_x_continuous(
-    labels = scales::percent_format()
+    labels = scales::percent_format(),
+    expand = expansion(mult = c(0, 0.07))
   ) +
   scale_y_continuous(
-    breaks = scales::pretty_breaks(n = 7)
+    breaks = scales::pretty_breaks(n = 7),
+    expand = expansion(mult = c(0, 0))
   ) +
   scale_color_manual(
     values = clrs[c(8, 4, 1)]
@@ -605,6 +617,16 @@ em_ci$emmeans |>
     color = "Abandoned Arable Land",
     fill = "Abandoned Arable Land"
   )
+
+emmeans_model_plot
+
+# Save
+ggmw::mw_save(
+  "figures/fig7_emmeans_plot.png",
+  emmeans_model_plot,
+  w = 24, h = 13
+)
+
 
 # Average Marginal Effects ------------------------------------------------
 library(marginaleffects)
