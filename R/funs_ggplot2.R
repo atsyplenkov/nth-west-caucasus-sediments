@@ -1,7 +1,7 @@
 library(ggplot2)
 library(ggtext)
 library(showtext)
-font_add("Merriweather", "Merriweather-Regular.ttf")
+font_add_google("Merriweather", "Merriweather")
 showtext_auto()
 
 # Make labels use Barlow by default
@@ -22,7 +22,8 @@ theme_kbn <-
           family = "Merriweather"
         ),
         plot.subtitle = ggtext::element_markdown(
-          size = rel(1), face = "plain",
+          size = rel(1),
+          face = "plain",
           family = "Merriweather"
         ),
         plot.caption = ggtext::element_markdown(
@@ -30,7 +31,10 @@ theme_kbn <-
           family = "Merriweather",
           margin = margin(t = 10)
         ),
-        panel.border = element_rect(color = "grey50", fill = NA, linewidth = 0.15),
+        panel.border = element_rect(
+          color = "grey50",
+          fill = NA, linewidth = 0.15
+        ),
         panel.grid = element_line(linewidth = 0.30),
         panel.grid.minor = element_blank(),
         strip.text = element_text(
@@ -39,14 +43,24 @@ theme_kbn <-
         ),
         strip.background = element_rect(fill = "grey85", colour = NA),
         axis.ticks = element_blank(),
-        # axis.title.x = element_text(margin = margin(t = 10)),
-        axis.title.x = ggtext::element_markdown(size = rel(0.9)),
+        axis.title.x = ggtext::element_markdown(
+          size = rel(0.9),
+          family = "Merriweather",
+        ),
+        axis.title.y = ggtext::element_markdown(
+          size = rel(0.9),
+          family = "Merriweather",
+        ),
+        # axis.title.x = ggtext::element_markdown(size = rel(0.9)),
         # axis.title.y = element_text(margin = margin(r = 10)),
-        axis.title.y = ggtext::element_markdown(size = rel(0.9)),
+        # axis.title.y = ggtext::element_markdown(size = rel(0.9)),
         axis.text = element_text(family = "Merriweather", face = "plain"),
         axis.title = element_text(family = "Merriweather", face = "plain"),
         legend.key = element_blank(),
-        legend.text = ggtext::element_markdown(size = rel(1), family = "Merriweather", face = "plain"),
+        legend.text = ggtext::element_markdown(
+          size = rel(1),
+          family = "Merriweather", face = "plain"
+        ),
         legend.box.margin = margin(t = -0.5, unit = "lines"),
         legend.margin = margin(t = 0),
         legend.position = "bottom",
