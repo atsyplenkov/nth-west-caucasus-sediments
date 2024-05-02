@@ -196,10 +196,6 @@ krasn_budget <-
 
 krasn_budget
 
-krasn_both |>
-  group_by(id) |>
-  complete(year = seq(1925, 2021, by = 1))
-
 # Pettitt test ------------------------------------------------------------
 pett <-
   krasn_both |>

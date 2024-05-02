@@ -122,7 +122,6 @@ aal_long <-
   mutate(TotAban = AAL / (Cropland + AAL)) |>
   mutate(across(where(is.numeric), ~ replace(.x, is.nan(.x), 0)))
 
-
 # WorldClim ---------------------------------------------------------------
 prec_rast <- rast(prec_files)
 
@@ -541,16 +540,15 @@ m <-
 broom::glance(m)
 broom::tidy(m)
 
-plot_model(m,
-  se = FALSE,
-  type = "pred",
-  terms = c("CroplandArea", "prec", "TotAban")
-) +
-  coord_cartesian(
-    ylim = c(0, NA),
-    # xlim = c(600, 1400),
-    expand = FALSE
-  )
+equatiomatic::extract_eq(m)
+
+report::report(m)
+
+model_qa <-
+  yardstick::metric_set(tidyhydro::nse, yardstick::ccc, yardstick::rsq)
+
+broom::augment(m) |>
+  model_qa(ssy, .fitted)
 
 emmeans(m, pairwise ~ CroplandArea | TotAban + prec,
   # cov.reduce = range,
@@ -629,6 +627,18 @@ ggmw::mw_save(
   emmeans_model_plot,
   w = 24, h = 13
 )
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # Average Marginal Effects ------------------------------------------------
