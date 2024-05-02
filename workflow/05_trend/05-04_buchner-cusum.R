@@ -11,6 +11,18 @@ theme_set(theme_kbn())
 clrs <- MetBrewer::met.brewer("Johnson", n = 8)
 clrs[3] <- "grey10"
 
+# Load watersheds ---------------------------------------------------------
+ws_sf <-
+  sf::st_read(
+    "data/vector/kbn_ws-predict/kbn_ws-predict.shp"
+  )
+
+ws_area <-
+  data.frame(
+    river = ws_sf$river,
+    area = as.numeric(sf::st_area(ws_sf)) / 10^6
+  )
+
 # Load data ---------------------------------------------------------------
 buchner_areas <-
   qs::qread("workflow/05_trend/data/landcover_buchner2020.qs")
@@ -93,7 +105,7 @@ buchner_cusum <-
 
 worldclim_cusum <-
   wc_all |>
-  # filter(between(Year, 1987, 2015)) |>
+  filter(between(Year, 1970, 2021)) |>
   gather(Type, Var, -river, -Year) |>
   group_by(river, Type) |>
   mutate(CDC = cumsum((Var - mean(Var)) / sd(Var))) |>
@@ -105,7 +117,7 @@ glims_cusum <- glims_df |>
   complete(Year = seq(1960, 2020, by = 5)) |>
   arrange(Year, .by_group = TRUE) |>
   mutate(GlimsArea = na_interpolation(GlimsArea) / 10^6) |>
-  # filter(between(Year, 1987, 2015)) |>
+  filter(between(Year, 1970, 2020)) |>
   gather(Type, Var, -river, -Year) |>
   group_by(river, Type) |>
   # mutate(VarMean = mean(Var, na.rm = T),
@@ -135,20 +147,6 @@ glims_mean <-
     .before = 1
   )
 
-glims_mean |>
-  ggplot(aes(
-    x = Year,
-    y = CDC
-  )) +
-  geom_ribbon(
-    aes(
-      ymin = .lower,
-      ymax = .upper
-    ),
-    alpha = 0.5
-  ) +
-  geom_line()
-
 watershed_cusum_plot <-
   buchner_cusum |>
   bind_rows(worldclim_cusum) |>
@@ -164,7 +162,7 @@ watershed_cusum_plot <-
         "(a) Apchas", "(b) Belaya (No. 83361)",
         "(c) Kuban (No. 83174)", "(d) Laba (No. 83314)",
         "(e) Marta", "(f) Psekups", "(g) Pshish (No. 83387)",
-        "(h) Shunduk", "(i) Mean glacier area"
+        "(h) Shunduk", "(i) Belaya, Kuban and Laba average"
       )
     )
   ) |>
@@ -197,7 +195,7 @@ watershed_cusum_plot <-
     lwd = rel(0.9),
     key_glyph = draw_key_timeseries
   ) +
-  facet_wrap(~river, scales = "free_y") +
+  facet_wrap(~river, scales = "free") +
   labs(
     y = "**CUSUM**",
     x = "",
@@ -206,10 +204,12 @@ watershed_cusum_plot <-
     lty = ""
   ) +
   scale_color_manual(
-    values = clrs[c(4, 5, 3, 7)]
+    values = clrs[c(4, 5, 3, 7)],
+    labels = c("Cropland", "Forest", "Glacier", "Precipitation")
   ) +
   scale_linetype_manual(
-    values = c("solid", "32", "32", "solid")
+    values = c("solid", "32", "32", "solid"),
+    labels = c("Cropland", "Forest", "Glacier", "Precipitation")
   ) +
   theme(
     legend.justification = "left",
@@ -224,6 +224,93 @@ watershed_cusum_plot <-
 watershed_cusum_plot
 
 # Saved to SVG through httpgd
+
+# Trend analysis -----------------------------------------------------------
+library(trend)
+
+zonal_pt <-
+  buchner_cusum |>
+  rename(Var = Area) |>
+  bind_rows(worldclim_cusum) |>
+  bind_rows(glims_cusum) |>
+  group_by(river, Type) |>
+  nest() |>
+  mutate(pt = map(
+    data,
+    ~ trend::pettitt.test(.x$Var)$estimate
+  )) |>
+  mutate(p = map(
+    data,
+    ~ trend::pettitt.test(.x$Var)$p.value
+  )) |>
+  mutate(years = map(
+    data, ~ sort(.x$Year)
+  )) |>
+  mutate(
+    m = map_dbl(
+      data, ~ mean(.x$Var)
+    )
+  ) |>
+  unnest(cols = c(pt, p)) |>
+  select(-data) |>
+  ungroup() |>
+  mutate(
+    break_year = map2_dbl(years, pt, ~ .x[.y])
+  ) |>
+  select(-years)
+
+zonal_pt |>
+  filter(Type == "Precipitation") |>
+  pull(m) |>
+  mean()
+
+# Taylor -----------------------------------------------------------
+library(ChangePointTaylor)
+
+set.seed(1234)
+taylor_res <-
+  buchner_cusum |>
+  rename(Var = Area) |>
+  group_by(river, Type) |>
+  nest() |>
+  mutate(taylor = map(
+    data,
+    ~ change_point_analyzer(
+      x = .x$Var,
+      labels = .x$Year,
+      # min_candidate_conf = 0.90,
+      # min_tbl_conf = 0.95,
+      n_bootstraps = 5000,
+      CI = 0.95
+    )
+  )) |>
+  dplyr::select(-data) |>
+  unnest(cols = c(taylor)) |>
+  ungroup()
+
+taylor_ci <-
+  taylor_res |>
+  mutate(
+    label_low = str_split(`CI (95%)`, "-", simplify = TRUE)[, 1],
+    label_upper = str_split(`CI (95%)`, "-", simplify = TRUE)[, 2],
+  ) |>
+  mutate(across(contains("label_"), ~ parse_number(.x)))
+
+taylor_ci |>
+  filter(Type == "CroplandArea") |>
+  count(label, sort = TRUE)
+
+# Timeseries -----------------------------------------------------------
+buchner_cusum |>
+  filter(Type == "ForestArea") |>
+  left_join(ws_area, by = join_by(river)) |>
+  transmute(river, Year, Type, Area = Area / area) |>
+  ggplot(
+    aes(Year, Area, color = Type)
+  ) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  facet_wrap(~river, scales = "free_y")
 
 # GLIMS -------------------------------------------------------------------
 glims_cusum <- glims_df |>
@@ -292,7 +379,7 @@ wc_all |>
       y = Precipitation
     ),
     method = "lm",
-    inherit.aes = F
+    inherit.aes = FALSE
   )
 
 library(ChangePointTaylor)
