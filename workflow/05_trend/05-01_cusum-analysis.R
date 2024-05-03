@@ -1,7 +1,6 @@
 library(here)
 library(tidyverse)
 library(ggnewscale)
-library(latex2exp)
 library(trend)
 library(ChangePointTaylor)
 library(geomtextpath)
@@ -201,7 +200,7 @@ pett <-
   krasn_both |>
   group_by(id) |>
   complete(year = seq(1925, 2021, by = 1)) |>
-  arrange(year, .by_group = T) |>
+  arrange(year, .by_group = TRUE) |>
   mutate(SSDBoth = imputeTS::na_interpolation(SSDBoth, maxgap = 5)) |>
   mutate(SSDBoth = imputeTS::na_mean(SSDBoth)) |>
   nest() |>
@@ -230,7 +229,7 @@ taylor_res <-
   krasn_both |>
   group_by(id) |>
   complete(year = seq(1925, 2021, by = 1)) |>
-  arrange(year, .by_group = T) |>
+  arrange(year, .by_group = TRUE) |>
   mutate(SSDBoth = imputeTS::na_interpolation(SSDBoth, maxgap = 5)) |>
   mutate(SSDBoth = imputeTS::na_mean(SSDBoth)) |>
   nest() |>
