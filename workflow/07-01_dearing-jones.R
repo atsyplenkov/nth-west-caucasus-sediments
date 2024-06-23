@@ -38,7 +38,10 @@ points_df <-
   )
 
 # Plot ----
-ggplot() +
+dd_formula <- "*y* = 9.55 &middot; *x*<sup>−0.19</sup>"
+
+dd_plot <-
+  ggplot() +
   geom_smooth(
     data = dearing_jones |>
       drop_na(line),
@@ -46,10 +49,11 @@ ggplot() +
       x = Area,
       y = line,
       color = "Line",
+      lty = "Line",
       group = NULL
     ),
     se = FALSE,
-    lwd = 1.5
+    lwd = rel(1)
   ) +
   geom_smooth(
     data = dearing_jones |>
@@ -58,9 +62,11 @@ ggplot() +
       x = Area,
       y = upper,
       color = "CI",
+      lty = "CI",
       group = NULL
     ),
-    se = FALSE
+    se = FALSE,
+    lwd = rel(0.75),
   ) +
   geom_smooth(
     data = dearing_jones |>
@@ -69,16 +75,11 @@ ggplot() +
       x = Area,
       y = lower,
       color = "CI",
+      lty = "CI",
       group = NULL
     ),
+    lwd = rel(0.75),
     se = FALSE
-  ) +
-  geom_point(
-    data = points_df,
-    aes(
-      x = Area,
-      y = SS
-    )
   ) +
   ggrepel::geom_text_repel(
     data = points_df,
@@ -87,11 +88,33 @@ ggplot() +
       y = SS,
       label = place
     ),
+    size = rel(3),
     nudge_y = 2.5,
     min.segment.length = 0,
-    fontface = "bold",
-    family = "Merriweather"
+    fontface = "plain",
+    family = "Merriweather",
+    segment.color = "dimgrey"
   ) +
+  geom_point(
+    data = points_df,
+    aes(
+      x = Area,
+      y = SS
+    ),
+    fill = "white",
+    shape = 21
+  ) +
+  scale_color_manual(
+    name = "",
+    labels = c("Prediction interval", dd_formula),
+    values = c("grey40", "black")
+  ) +
+  scale_linetype_manual(
+    name = "",
+    labels = c("Prediction interval", dd_formula),
+    values = c("84", "solid")
+  ) +
+  guides(linetype = guide_legend(override.aes = list(linetype = c("22", "solid")))) +
   scale_x_continuous(
     trans = "log10",
     breaks = trans_breaks("log10", n = 10, function(x) 10^x),
@@ -106,6 +129,24 @@ ggplot() +
     expand = FALSE,
   ) +
   labs(
-    x = "Drainage basin area [km<sup>2</sup>]",
-    y = "*S*<sub>max</sub> / *S*<sub>min</sub>"
+    x = "**Drainage basin area [km<sup>2</sup>]**",
+    y = "***S*<sub>max</sub> / *S*<sub>min</sub>**"
+  ) +
+  theme(
+    legend.text = ggtext::element_markdown(
+      family = "Merriweather",
+      size = 9
+    ),
+    legend.position = "inside",
+    legend.position.inside = c(0.7, 0.9),
+    legend.justification = "left",
+    legend.key.height = unit(0.7, "lines"),
+    legend.key.width = unit(1.5, "lines"),
+    legend.spacing = unit(0.3, "lines"),
+    legend.background = element_blank(),
+    plot.margin = margin(t = 5.5, r = 12, b = 5.5, l = 5.5)
   )
+
+dd_plot
+
+# Saved to SVG through httpgd
