@@ -94,6 +94,7 @@ ws_obs |>
   filter(!str_detect(id, "-")) |>
   nrow() |>
   magrittr::divide_by(region_area_original / 10^3)
+# > 1.560525
 
 # New Gauging station density
 region_area <-
@@ -103,6 +104,7 @@ region_area <-
   terra::expanse("km")
 
 nrow(ws_obs) / (region_area / 10^3)
+# > 1.712814
 
 # 3) Sediment data --------------------------------------------------------
 ter_data <-
@@ -146,6 +148,7 @@ boxcox_l <-
   )
 
 boxcox_l
+# > 0.05
 
 ws_obs_box <-
   ws_obs_sy |>
@@ -535,42 +538,11 @@ krasnodar_tyr |>
     krasnodar_db_tot,
     by = join_by(year)
   ) |>
-  mutate(across(c(ssd_tyr, upstream_tyr_new), ~ {
-    .x^0.05
-  })) |>
-  val_metrics(ssd_tyr, upstream_tyr_new)
-
-
-krasnodar_tyr |>
-  # filter(year > 1945 & year < 1973) |>
-  filter(year < 1945) |>
-  left_join(
-    krasnodar_db_tot,
-    by = join_by(year)
+  mutate(
+    rel = 100 * (ssd_tyr - upstream_tyr_new) / ssd_tyr
   ) |>
-  ggplot(
-    aes(
-      y = (upstream_tyr_new)^0.05,
-      x = (ssd_tyr)^0.05
-    )
-  ) +
-  geom_abline(slope = 1) +
-  geom_point() +
-  ggrepel::geom_text_repel(
-    aes(
-      label = year
-    )
-  ) +
-  ggpmisc::stat_poly_eq(
-    formula = y ~ x,
-    aes(label = paste(stat(eq.label)))
-  ) +
-  geom_smooth(
-    formula = y ~ x,
-    method = "lm"
-  ) +
-  tune::coord_obs_pred()
-
+  ggdist::mean_qi(rel)
+# > 31.2 %
 
 krasnodar_metrics <-
   krasnodar_tyr |>
