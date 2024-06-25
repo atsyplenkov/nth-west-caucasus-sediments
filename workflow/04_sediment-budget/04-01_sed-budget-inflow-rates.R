@@ -288,7 +288,7 @@ plot_krasn_budget <-
   ) |>
   group_by(Period) |>
   mutate(pct = role / sum(role)) |>
-  mutate(facet = "(a) Sediment budget") |>
+  mutate(facet = "(b) Sediment budget") |>
   ggplot(
     aes(
       x = Period,
@@ -409,7 +409,7 @@ sed_den |>
 plot_sed <-
   sed_den |>
   mutate(
-    facet = "(b) Sedimentation & denudation"
+    facet = "(a) Sedimentation & denudation"
   ) |>
   ggplot() +
   geom_line(
@@ -469,6 +469,13 @@ plot_sed <-
 
 plot_sed
 
+# Average values ----
+sed_den |>
+  select(E, S, Period) |>
+  gather(var, val, -Period) |>
+  group_by(var) |>
+  rstatix::get_summary_stats(type = "common")
+
 # Save ---------------------------------------------------------------
 # Tables
 library(writexl)
@@ -489,7 +496,12 @@ reservoir_plot <-
     heights = c(1, 1.65)
   )
 
-reservoir_plot
+reservoir_plot2 <-
+  (plot_sed / plot_krasn_budget)
+
+reservoir_plot2
+# Saved to SVG via httpgd
+
 
 ggmw::mw_save(
   "figures/fig3_reservoir-sedimentation-budget.png",
