@@ -78,22 +78,6 @@ krasn_inflow <-
     )
   )
 
-# Compare measured and imputed data
-krasn_inflow |>
-  left_join(
-    sed_data,
-    by = join_by(id, year)
-  ) |>
-  ggplot(
-    aes(
-      x = ssd_mean,
-      y = ssd_sim
-    )
-  ) +
-  geom_point() +
-  geom_abline() +
-  tune::coord_obs_pred()
-
 
 krasn_both <-
   krasn_inflow |>
@@ -399,6 +383,28 @@ ggmw::mw_save(
   w = 22, h = 13
 )
 
+# Create table ----
+taylor_pettitt_table <-
+  taylor_ci |>
+  transmute(
+    id,
+    TaylorBreak = glue::glue("{label} ({label_low}–{label_upper})")
+  ) |>
+  left_join(
+    pett |>
+      select(id, PettittBreak = break_year, PettittP = p),
+    by = join_by(id)
+  ) |>
+  relocate(PettittBreak, PettittP, .after = 1)
+
+taylor_pettitt_table
+
+# Save
+writexl::write_xlsx(
+  taylor_pettitt_table,
+  "tables/table7_ssy-break-points.xlsx"
+)
+
 # Trends ------------------------------------------------------------------
 taylor_periods <-
   taylor_res |>
@@ -441,7 +447,7 @@ krasn_period |>
   ) +
   geom_smooth(
     method = "lm",
-    se = F
+    se = FALSE
   ) +
   scale_y_log10() +
   facet_wrap(~id, scales = "free_y")
