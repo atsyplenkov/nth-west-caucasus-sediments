@@ -392,10 +392,13 @@ taylor_pettitt_table <-
   ) |>
   left_join(
     pett |>
-      select(id, PettittBreak = break_year, PettittP = p),
+      transmute(
+        id,
+        PettittBreak = glue::glue("{break_year}{ifelse(p < 0.05, '*', '')}")
+      ),
     by = join_by(id)
   ) |>
-  relocate(PettittBreak, PettittP, .after = 1)
+  relocate(PettittBreak, .after = 1)
 
 taylor_pettitt_table
 

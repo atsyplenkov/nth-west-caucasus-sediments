@@ -111,7 +111,8 @@ worldclim_cusum <-
   mutate(CDC = cumsum((Var - mean(Var)) / sd(Var))) |>
   ungroup()
 
-glims_cusum <- glims_df |>
+glims_cusum <-
+  glims_df |>
   filter(GlimsArea != 0) |>
   group_by(river) |>
   complete(Year = seq(1960, 2020, by = 5)) |>
@@ -134,7 +135,6 @@ buchner_hyde_cusum <-
   group_by(river, Type) |>
   mutate(CDC = cumsum((Var - mean(Var)) / sd(Var))) |>
   ungroup()
-
 
 glims_mean <-
   glims_cusum |>
@@ -299,6 +299,61 @@ taylor_ci <-
 taylor_ci |>
   filter(Type == "CroplandArea") |>
   count(label, sort = TRUE)
+
+# Tables ----
+taylor_wide <-
+  taylor_ci |>
+  transmute(
+    id = river,
+    Type = case_when(
+      Type == "CroplandArea" ~ "CA",
+      Type == "ForestArea" ~ "FA",
+    ),
+    TaylorBreak = glue::glue("{label} ({label_low}–{label_upper})")
+  ) |>
+  pivot_wider(
+    id_cols = c(id),
+    names_from = Type,
+    values_from = TaylorBreak,
+    values_fn = list
+  ) |>
+  unnest(c(FA)) |>
+  unnest(c(CA))
+
+zonal_pt_wide <-
+  zonal_pt |>
+  transmute(
+    id = river,
+    Type = case_when(
+      Type == "CroplandArea" ~ "CA",
+      Type == "ForestArea" ~ "FA",
+      Type == "Precipitation" ~ "P",
+      Type == "GlimsArea" ~ "GLIMS"
+    ),
+    PettittBreak = glue::glue("{break_year}{ifelse(p < 0.05, '*', '')}")
+  ) |>
+  pivot_wider(
+    id_cols = c(id),
+    names_from = Type,
+    names_glue = "Pettitt{Type}",
+    values_from = PettittBreak,
+    values_fn = list
+  ) |>
+  unnest(PettittCA) |>
+  unnest(PettittFA) |>
+  unnest(PettittP) |>
+  unnest(PettittGLIMS, keep_empty = TRUE)
+
+# Save
+writexl::write_xlsx(
+  zonal_pt_wide,
+  "tables/table8_zonal-break-points-pettitt.xlsx"
+)
+
+writexl::write_xlsx(
+  taylor_wide,
+  "tables/table8_zonal-break-points-taylor.xlsx"
+)
 
 # Timeseries -----------------------------------------------------------
 buchner_cusum |>
