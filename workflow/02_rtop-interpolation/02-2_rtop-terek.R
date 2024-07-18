@@ -184,6 +184,8 @@ id_order <-
 id_order |>
   count(Region)
 
+# Figure 2
+# Saved as svg via httpgd
 ssd_miss |>
   filter(n > 1) |>
   mutate(id = factor(id, levels = id_order$id, ordered = TRUE)) |>
@@ -210,6 +212,92 @@ ssd_miss |>
   ) +
   facet_wrap(~Region, scales = "free_y", ncol = 2) +
   theme(panel.grid.major.y = element_line(color = "grey90"))
+
+# Gage station description ----
+# Gauging station names
+## Terek River basin
+terek_names <-
+  readxl::read_excel(
+    "data/hydro/terek_SY.xlsx",
+    sheet = 1,
+    range = "A2:B39",
+    col_names = c("label", "id")
+  ) |>
+  dplyr::mutate(
+    label = stringi::stri_trans_general(
+      label,
+      "russian-latin/bgn"
+    ),
+    label = stringr::str_replace(
+      label, "-", "—"
+    ),
+    id = as.character(id)
+  )
+
+## Kuban River basin
+kuban_names <-
+  readxl::read_excel(
+    "data/hydro/gage_id-24082022.xlsx",
+    sheet = 1,
+    range = "A1:D81"
+  ) |>
+  dplyr::transmute(
+    label = glue::glue("{river} – {gage}"),
+    label = stringi::stri_trans_general(
+      label,
+      "russian-latin/bgn"
+    ),
+    id = as.character(id)
+  ) |>
+  dplyr::mutate(
+    label = stringr::str_replace(
+      label,
+      "Kubanʹ",
+      "Kuban"
+    )
+  )
+
+ws_stats <-
+  ws_obs_sy |>
+  st_drop_geometry() |>
+  as_tibble() |>
+  group_by(id, area) |>
+  reframe(
+    ssy_mean = mean(ssy),
+    ssy_median = median(ssy),
+    ssy_max = max(ssy),
+    ssy_min = min(ssy),
+    ssy_sd = sd(ssy)
+  )
+
+supp_table <-
+  ssd_miss |>
+  filter(n > 1) |>
+  left_join(
+    ws_stats,
+    by = join_by(id)
+  ) |>
+  mutate(across(where(is.numeric), ~ atslib::smart_round(.x))) |>
+  left_join(
+    bind_rows(
+      kuban_names,
+      terek_names
+    ),
+    by = join_by(id)
+  ) |>
+  relocate(label, .after = id) |>
+  relocate(area, .after = label) |>
+  mutate(
+    period = glue::glue("{start}–{end}"),
+    .after = area
+  ) |>
+  dplyr::select(-ssd_a:-end)
+
+## Save table
+writexl::write_xlsx(
+  supp_table,
+  path = "tables/tableSM_gage-desc.xlsx"
+)
 
 # 5) Predict --------------------------------------------------------------
 library(rtop)
