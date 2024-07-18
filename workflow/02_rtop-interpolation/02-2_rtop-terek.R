@@ -312,7 +312,7 @@ plan(multisession, workers = 15)
 years_available <-
   ws_obs_box |>
   st_drop_geometry() |>
-  count(year, sort = T) |>
+  count(year, sort = TRUE) |>
   filter(n >= 10) |>
   # filter(year >= 1973) |>
   pull(year) |>
@@ -436,7 +436,7 @@ ssd_uk2 <-
       .year = .x,
       .iter = 2000,
       .boxcox = boxcox_l,
-      .cooks_cutoff = T
+      .cooks_cutoff = TRUE
     ),
     .progress = TRUE,
     .options = furrr::furrr_options(seed = TRUE) # !!!!!
@@ -482,8 +482,8 @@ cv_scatter <-
     label = list(cv_metrics),
     npcx = 0.95,
     npcy = 0.05,
-    parse = T,
-    table.colnames = F,
+    parse = TRUE,
+    table.colnames = FALSE,
     family = "Merriweather",
     table.theme = ttheme_gtminimal
   ) +
@@ -673,8 +673,8 @@ val_scatter <-
     label = list(krasnodar_metrics),
     npcx = 0.95,
     npcy = 0.05,
-    parse = T,
-    table.colnames = F,
+    parse = TRUE,
+    table.colnames = FALSE,
     family = "Merriweather",
     table.theme = ttheme_gtminimal
   ) +
@@ -956,7 +956,7 @@ ws_obs_qa <-
 ws_pred_qa |>
   filter(!id %in% rtop_ids) |>
   drop_na(obs) |>
-  count(id, sort = T)
+  count(id, sort = TRUE)
 
 ws_pred_qa |>
   # filter(!id %in% rtop_ids) |>
