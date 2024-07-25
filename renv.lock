@@ -1690,18 +1690,6 @@
       ],
       "Hash": "384b388bd9155468d2c851846ee69f9f"
     },
-    "ggmw": {
-      "Package": "ggmw",
-      "Version": "0.1",
-      "Source": "unknown",
-      "Requirements": [
-        "R",
-        "ggplot2",
-        "grDevices",
-        "graphics"
-      ],
-      "Hash": "41e0966958b541f7ffc17f40b78c2194"
-    },
     "ggnewscale": {
       "Package": "ggnewscale",
       "Version": "0.4.10",
