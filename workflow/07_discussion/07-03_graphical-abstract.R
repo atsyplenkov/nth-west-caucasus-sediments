@@ -1,3 +1,7 @@
+# The graphical abstract was created in Inkscape
+# Some figures produced with ggplot was produced
+# here and further inserted in Inkscape
+
 library(here)
 library(tidyverse)
 
