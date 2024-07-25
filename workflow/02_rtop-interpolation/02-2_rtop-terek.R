@@ -1077,7 +1077,6 @@ cv_df <- ssd_uk2 |>
   unnest(c(.cv_df)) |>
   select(id, year, cv = var1.pred)
 
-
 cv_df |>
   left_join(pred_df, by = join_by(id, year)) |>
   ggplot(aes(x = pred, y = cv)) +
