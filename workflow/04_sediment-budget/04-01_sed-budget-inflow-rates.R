@@ -36,7 +36,7 @@ rtop_pred <-
     area,
     ssd_sim = var1.pred^(1 / 0.05), # Mind the Box-Cox lambda
     ssd_sim = ssd_sim * area / 31536,
-    bed_f = 28.21 / (95.25 + ssd_sim),
+    bed_f = 28.21 / (95.25 + ssd_sim), # see summary(bedload_model)
     tot_sd = ssd_sim / (1 - bed_f),
     ssd_tyr = ssd_sim * 31536 / 10^6,
     tot_tyr = tot_sd * 31536 / 10^6
