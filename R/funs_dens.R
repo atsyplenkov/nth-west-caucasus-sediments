@@ -9,7 +9,8 @@ sed_dens <-
   function(
       .w,
       .d,
-      .mu = 10^-3) {
+      .mu = 10^-3
+    ) {
     # convert diam in mm to mm
     .d <- .d / 1000
 

@@ -137,24 +137,28 @@ plot_sediments <-
 plot_sediments
 
 # Sediment Budget ---------------------------------------------------------
-krasn_inflow_summary <-
-  krasn_inflow |>
-  mutate(
-    Period = case_when(
-      between(year, 2004, 2015) ~ "2005-2016",
-      between(year, 2016, 2021) ~ "2016-2021",
-      TRUE ~ NA_character_
-    )
-  ) |>
-  filter(!is.na(Period)) |>
-  summarise(
-    A = unique(area),
-    SSDmean = mean(ssd_sim),
-    BFmean = mean(bed_f),
-    SSDtot = sum(ssd_tyr),
-    SDtot = sum(tot_tyr),
-    .by = c(Period, id)
-  )
+# !NB
+# krasn_inflow_summary is created in 
+# 05-01_cusum-analysis.R
+
+# krasn_inflow_summary <-
+#   krasn_inflow |>
+#   mutate(
+#     Period = case_when(
+#       between(year, 2004, 2015) ~ "2005-2016",
+#       between(year, 2016, 2021) ~ "2016-2021",
+#       TRUE ~ NA_character_
+#     )
+#   ) |>
+#   filter(!is.na(Period)) |>
+#   summarise(
+#     A = unique(area),
+#     SSDmean = mean(ssd_sim),
+#     BFmean = mean(bed_f),
+#     SSDtot = sum(ssd_tyr),
+#     SDtot = sum(tot_tyr),
+#     .by = c(Period, id)
+#   )
 
 krasn_budget <-
   krasn_inflow_summary |>
