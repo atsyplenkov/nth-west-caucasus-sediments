@@ -132,6 +132,7 @@ krasn_inflow_summary <-
   ) |>
   filter(!is.na(Period)) |>
   summarise(
+    n = n(),
     A = unique(area),
     SSDmean = mean(SSDBoth),
     BFmean = mean(bed_f),
@@ -178,6 +179,29 @@ krasn_budget <-
   )
 
 krasn_budget
+glimpse(krasn_budget)
+
+# Section 4.3 description ------------------------------------------------
+krasn_inflow_summary |>
+  group_by(Period, n) |>
+  reframe(
+    SusIncome = sum(SSDtot),
+    BedIncome = sum(SDtot) - sum(SSDtot),
+    TotalIncome = sum(SDtot)
+  ) |>
+  # Estimate mean annual rates
+  mutate(
+    SusRate = SusIncome / n,
+    BedRate = BedIncome / n,
+    TotalRate = TotalIncome / n
+  ) |>
+  mutate(across(where(is.numeric), ~ round(.x, 2))) |>
+  glimpse()
+
+# rivers_flux is from 04-01_sed-budget-inflow-rates.R
+rivers_flux |> 
+  filter(str_detect(id, "Kuban")) |> 
+  glimpse()
 
 # Pettitt test ------------------------------------------------------------
 pett <-

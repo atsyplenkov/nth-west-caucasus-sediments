@@ -36,7 +36,7 @@ rtop_pred <-
     area,
     ssd_sim = var1.pred^(1 / 0.05), # Mind the Box-Cox lambda
     ssd_sim = ssd_sim * area / 31536,
-    bed_f = 28.21 / (95.25 + ssd_sim),
+    bed_f = 28.21 / (95.25 + ssd_sim), # see summary(bedload_model)
     tot_sd = ssd_sim / (1 - bed_f),
     ssd_tyr = ssd_sim * 31536 / 10^6,
     tot_tyr = tot_sd * 31536 / 10^6
@@ -137,24 +137,28 @@ plot_sediments <-
 plot_sediments
 
 # Sediment Budget ---------------------------------------------------------
-krasn_inflow_summary <-
-  krasn_inflow |>
-  mutate(
-    Period = case_when(
-      between(year, 2004, 2015) ~ "2005-2016",
-      between(year, 2016, 2021) ~ "2016-2021",
-      TRUE ~ NA_character_
-    )
-  ) |>
-  filter(!is.na(Period)) |>
-  summarise(
-    A = unique(area),
-    SSDmean = mean(ssd_sim),
-    BFmean = mean(bed_f),
-    SSDtot = sum(ssd_tyr),
-    SDtot = sum(tot_tyr),
-    .by = c(Period, id)
-  )
+# !NB
+# krasn_inflow_summary is created in 
+# 05-01_cusum-analysis.R
+
+# krasn_inflow_summary <-
+#   krasn_inflow |>
+#   mutate(
+#     Period = case_when(
+#       between(year, 2004, 2015) ~ "2005-2016",
+#       between(year, 2016, 2021) ~ "2016-2021",
+#       TRUE ~ NA_character_
+#     )
+#   ) |>
+#   filter(!is.na(Period)) |>
+#   summarise(
+#     A = unique(area),
+#     SSDmean = mean(ssd_sim),
+#     BFmean = mean(bed_f),
+#     SSDtot = sum(ssd_tyr),
+#     SDtot = sum(tot_tyr),
+#     .by = c(Period, id)
+#   )
 
 krasn_budget <-
   krasn_inflow_summary |>
