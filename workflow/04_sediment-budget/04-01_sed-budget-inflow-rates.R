@@ -9,15 +9,13 @@ clrs <- MetBrewer::met.brewer("Johnson", n = 8)
 clrs[3] <- "grey10"
 
 # 1) Load data ------------------------------------------------------------
-rtop_data <-
-  qs::qread(
-    "workflow/02_rtop-interpolation/data/rtop_cv_7jan23.qs"
-  )
+rtop_data <- qs::qread(
+  "workflow/02_rtop-interpolation/data/rtop_cv_7jan23.qs"
+)
 
-bedload_model <-
-  qs::qread(
-    "workflow/02_rtop-interpolation/data/bedload_model.qs"
-  )
+bedload_model <- qs::qread(
+  "workflow/02_rtop-interpolation/data/bedload_model.qs"
+)
 
 # I was too lazy to properly call this nls model in the
 # future pipeline.
@@ -26,8 +24,7 @@ bedload_model <-
 summary(bedload_model)
 
 # 2) Tidy data ------------------------------------------------------------
-rtop_pred <-
-  rtop_data |>
+rtop_pred <- rtop_data |>
   select(.pred_df) |>
   unnest(cols = c(.pred_df)) |>
   transmute(
@@ -45,30 +42,31 @@ rtop_pred <-
 # 3) Inflow Summary -------------------------------------------------------
 # Subset only those gauging stations that have
 # inflows directly into the Krasnodar reservoir.
-krasn_inflow <-
-  rtop_pred |>
+krasn_inflow <- rtop_pred |>
   filter(
-    id %in% c(
-      "83174",
-      "83314",
-      "83361",
-      "83387",
-      "Marta",
-      "Apchas",
-      "Shunduk",
-      "Psekups"
-    )
+    id %in%
+      c(
+        "83174",
+        "83314",
+        "83361",
+        "83387",
+        "Marta",
+        "Apchas",
+        "Shunduk",
+        "Psekups"
+      )
   )
 
 # Cumulative inflow -------------------------------------------------------
-plot_sediments <-
-  krasn_inflow |>
+plot_sediments <- krasn_inflow |>
   filter(year >= 2004) |>
-  mutate(tot_tyr = ifelse(
-    id == "83361",
-    tot_tyr / 2,
-    tot_tyr
-  )) |>
+  mutate(
+    tot_tyr = ifelse(
+      id == "83361",
+      tot_tyr / 2,
+      tot_tyr
+    )
+  ) |>
   mutate(
     group = ifelse(
       id %in% c("83174", "83314", "83361"),
@@ -103,16 +101,28 @@ plot_sediments <-
     name = "",
     values = clrs,
     labels = c(
-      "Kuban (No. 83174)", "Laba (No. 83314)", "Belaya (No. 83361)",
-      "Pshish (No. 83387)", "Apchas", "Marta", "Psekups", "Shunduk"
+      "Kuban (No. 83174)",
+      "Laba (No. 83314)",
+      "Belaya (No. 83361)",
+      "Pshish (No. 83387)",
+      "Apchas",
+      "Marta",
+      "Psekups",
+      "Shunduk"
     ),
   ) +
   scale_linetype_manual(
     name = "",
     values = rep(c("solid", "32"), 4),
     labels = c(
-      "Kuban (No. 83174)", "Laba (No. 83314)", "Belaya (No. 83361)",
-      "Pshish (No. 83387)", "Apchas", "Marta", "Psekups", "Shunduk"
+      "Kuban (No. 83174)",
+      "Laba (No. 83314)",
+      "Belaya (No. 83361)",
+      "Pshish (No. 83387)",
+      "Apchas",
+      "Marta",
+      "Psekups",
+      "Shunduk"
     ),
     guide = guide_legend(
       title.position = "top",
@@ -138,7 +148,7 @@ plot_sediments
 
 # Sediment Budget ---------------------------------------------------------
 # !NB
-# krasn_inflow_summary is created in 
+# krasn_inflow_summary is created in
 # 05-01_cusum-analysis.R
 
 # krasn_inflow_summary <-
@@ -160,8 +170,7 @@ plot_sediments
 #     .by = c(Period, id)
 #   )
 
-krasn_budget <-
-  krasn_inflow_summary |>
+krasn_budget <- krasn_inflow_summary |>
   mutate(
     SDtot = case_when(
       id == "83361" ~ SDtot * 0.5,
@@ -202,8 +211,7 @@ krasn_budget <-
 krasn_budget
 
 # Budget per rivers
-raw_flux <-
-  krasn_inflow_summary |>
+raw_flux <- krasn_inflow_summary |>
   mutate(
     SDtot = case_when(
       id == "83361" ~ SDtot * 0.5,
@@ -252,18 +260,18 @@ krasn_inflow |>
   group_by(Period) |>
   ggdist::mean_qi(TotFlux)
 
-rivers_flux <-
-  raw_flux |>
+rivers_flux <- raw_flux |>
   group_by(Period) |>
   nest() |>
-  mutate(data = map(data, ~ janitor::adorn_totals(.x))) |>
+  mutate(data = map(data, ~janitor::adorn_totals(.x))) |>
   unnest(cols = c(data)) |>
   mutate(
-    across(ends_with("Pct"), ~ round(100 * .x, 2)),
-    across(ends_with("Flux"), ~ round(.x, 2))
+    across(ends_with("Pct"), ~round(100 * .x, 2)),
+    across(ends_with("Flux"), ~round(.x, 2))
   ) |>
   transmute(
-    Period, id,
+    Period,
+    id,
     SSFlux = glue::glue("{SSFlux} ({SSPct} %)"),
     BSFlux = glue::glue("{BSFlux} ({BSPct} %)"),
     TotFlux = glue::glue("{TotFlux} ({TotPct} %)"),
@@ -281,11 +289,13 @@ rivers_flux <-
 rivers_flux
 
 # Budget plot
-plot_krasn_budget <-
-  krasn_budget |>
+plot_krasn_budget <- krasn_budget |>
   select(Period, V, Shore, FluxSS, FluxBS) |>
   gather(
-    part, role, -Period, -V
+    part,
+    role,
+    -Period,
+    -V
   ) |>
   mutate(
     part = factor(part, levels = c("Shore", "FluxBS", "FluxSS"))
@@ -350,27 +360,29 @@ plot_krasn_budget <-
 plot_krasn_budget
 
 # Sedimentation/Denudation ------------------------------------------------
-sed_den <-
-  readxl::read_excel(
-    "data/tables/krasnodar_res_vol.xlsx",
-    range = "A1:N7"
-  ) |>
+sed_den <- readxl::read_excel(
+  "data/tables/krasnodar_res_vol.xlsx",
+  range = "A1:N7"
+) |>
   filter(!is.na(time2)) |>
   transmute(
-    time1, time2,
+    time1,
+    time2,
     Period = paste0(time1, "-", time2),
     E = `denudation rate, mm/yr`,
     S = `sedimentation rate, %`
   ) |>
-  mutate(across(c(time1, time2), ~ as.numeric(.x))) |>
+  mutate(across(c(time1, time2), ~as.numeric(.x))) |>
   mutate(Period = as_factor(Period))
 
 sed_den |>
   ggplot() +
   geom_rect(
     aes(
-      xmin = time1, xmax = time2,
-      ymin = 0, ymax = S
+      xmin = time1,
+      xmax = time2,
+      ymin = 0,
+      ymax = S
     ),
     fill = colorspace::lighten(clrs[7], amount = 0.3),
     color = "black"
@@ -405,13 +417,13 @@ sed_den |>
   scale_y_continuous(
     name = "**Sedimentation rate _S_ [%]**",
     expand = expansion(mult = c(0, 0.1)),
-    sec.axis = sec_axis(~ . / (max(sed_den$S) / max(sed_den$E)),
+    sec.axis = sec_axis(
+      ~. / (max(sed_den$S) / max(sed_den$E)),
       name = "**Denudation rate _E_ [mm/yr]**"
     )
   )
 
-plot_sed <-
-  sed_den |>
+plot_sed <- sed_den |>
   mutate(
     facet = "(a) Sedimentation & denudation"
   ) |>
@@ -443,8 +455,10 @@ plot_sed <-
     name = "**Sedimentation rate _S_ [%]**",
     expand = expansion(mult = c(0, 0.1)),
     limits = c(0, NA),
-    sec.axis = sec_axis(~ . / (max(sed_den$S) / max(sed_den$E)),
-      breaks = c(0, 0.1, 0.2, 0.3, 0.4, 0.5) / (max(sed_den$S) / max(sed_den$E)),
+    sec.axis = sec_axis(
+      ~. / (max(sed_den$S) / max(sed_den$E)),
+      breaks = c(0, 0.1, 0.2, 0.3, 0.4, 0.5) /
+        (max(sed_den$S) / max(sed_den$E)),
       labels = scales::label_number(accuracy = 0.01),
       name = "**Denudation rate _E_ [mm/yr]**"
     )
@@ -493,21 +507,18 @@ rivers_flux |>
 # Figures
 library(patchwork)
 
-reservoir_plot <-
-  (plot_krasn_budget | plot_sed) /
+reservoir_plot <- (plot_krasn_budget | plot_sed) /
   plot_sediments +
   plot_layout(
     heights = c(1, 1.65)
   )
 
-reservoir_plot2 <-
-  (plot_sed / plot_krasn_budget)
+reservoir_plot2 <- (plot_sed / plot_krasn_budget)
 
 reservoir_plot2
 # Saved to SVG via httpgd
 
-
-ggmw::mw_save(
+mw_save(
   "figures/fig3_reservoir-sedimentation-budget.png",
   reservoir_plot,
   w = 22,

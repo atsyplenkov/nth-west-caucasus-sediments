@@ -8,8 +8,7 @@ source(here("R", "funs_ggplot2.R"))
 theme_set(theme_kbn())
 
 # Load data ----
-list_df <-
-  fs::dir_ls("data/images/", regexp = "*.csv$") |>
+list_df <- fs::dir_ls("data/images/", regexp = "*.csv$") |>
   as.list() |>
   lapply(fread)
 
@@ -17,8 +16,7 @@ list_df[[1]]$type <- "line"
 list_df[[2]]$type <- "lower"
 list_df[[4]]$type <- "upper"
 
-dearing_jones <-
-  list_df[c(1, 2, 4)] |>
+dearing_jones <- list_df[c(1, 2, 4)] |>
   bind_rows() |>
   rename(Area = 1, SS = 2) |>
   pivot_wider(
@@ -27,8 +25,7 @@ dearing_jones <-
     values_from = SS
   )
 
-points_df <-
-  list_df[[3]] |>
+points_df <- list_df[[3]] |>
   rename(Area = 1, SS = 2) |>
   mutate(place = "Black Sea") |>
   add_row(
@@ -40,8 +37,7 @@ points_df <-
 # Plot ----
 dd_formula <- "*y* = 9.55 &middot; *x*<sup>−0.19</sup>"
 
-dd_plot <-
-  ggplot() +
+dd_plot <- ggplot() +
   geom_smooth(
     data = dearing_jones |>
       drop_na(line),
@@ -114,7 +110,9 @@ dd_plot <-
     labels = c("Prediction interval", dd_formula),
     values = c("84", "solid")
   ) +
-  guides(linetype = guide_legend(override.aes = list(linetype = c("22", "solid")))) +
+  guides(
+    linetype = guide_legend(override.aes = list(linetype = c("22", "solid")))
+  ) +
   scale_x_continuous(
     trans = "log10",
     breaks = trans_breaks("log10", n = 10, function(x) 10^x),

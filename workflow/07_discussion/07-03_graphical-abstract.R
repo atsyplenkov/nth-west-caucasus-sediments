@@ -10,23 +10,22 @@ source(here("R", "funs_ggplot2.R"))
 clrs <- MetBrewer::met.brewer("Johnson", n = 8)
 clrs[3] <- "grey10"
 
-sed_den <-
-  readxl::read_excel(
-    "data/tables/krasnodar_res_vol.xlsx",
-    range = "A1:N7"
-  ) |>
+sed_den <- readxl::read_excel(
+  "data/tables/krasnodar_res_vol.xlsx",
+  range = "A1:N7"
+) |>
   filter(!is.na(time2)) |>
   transmute(
-    time1, time2,
+    time1,
+    time2,
     Period = paste0(time1, "-", time2),
     E = `denudation rate, mm/yr`,
     S = `sedimentation rate, %`
   ) |>
-  mutate(across(c(time1, time2), ~ as.numeric(.x))) |>
+  mutate(across(c(time1, time2), ~as.numeric(.x))) |>
   mutate(Period = as_factor(Period))
 
-plot_sed <-
-  sed_den |>
+plot_sed <- sed_den |>
   ggplot() +
   geom_line(
     aes(

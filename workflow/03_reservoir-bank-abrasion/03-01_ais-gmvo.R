@@ -4,23 +4,20 @@ library(sf)
 library(mapview)
 
 # 1) Load AIS GMVO data ---------------------------------------------------
-krasn_abrasion <- 
-  read_excel(
-    "data/tables/report_2024-01-21.xlsx",
-    sheet = "Sheet2"
-  ) |> 
-  select(-Coordinates) |> 
-  drop_na(Year) |> 
-  mutate(dX = str_replace(dX, ",", "."),
-         dX = as.numeric(dX))
+krasn_abrasion <- read_excel(
+  "data/tables/report_2024-01-21.xlsx",
+  sheet = "Sheet2"
+) |>
+  select(-Coordinates) |>
+  drop_na(Year) |>
+  mutate(dX = str_replace(dX, ",", "."), dX = as.numeric(dX))
 
 # 2) Transform to spatial data --------------------------------------------
-kras_abrasion_sf <- 
-  st_as_sf(
-    krasn_abrasion,
-    coords = c("X", "Y"),
-    crs = 4326
-  )
+kras_abrasion_sf <- st_as_sf(
+  krasn_abrasion,
+  coords = c("X", "Y"),
+  crs = 4326
+)
 
 mapview(kras_abrasion_sf)
 

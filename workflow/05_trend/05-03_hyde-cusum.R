@@ -19,38 +19,40 @@ clrs <- MetBrewer::met.brewer("Johnson", n = 8)
 clrs[3] <- "grey10"
 
 # Load watersheds ---------------------------------------------------------
-ws_sf <-
-  sf::st_read(
-    "data/vector/kbn_ws-predict/kbn_ws-predict.shp"
-  )
+ws_sf <- sf::st_read(
+  "data/vector/kbn_ws-predict/kbn_ws-predict.shp"
+)
 
-ws_area <-
-  data.frame(
-    river = ws_sf$river,
-    area = as.numeric(sf::st_area(ws_sf)) / 10^6
-  )
+ws_area <- data.frame(
+  river = ws_sf$river,
+  area = as.numeric(sf::st_area(ws_sf)) / 10^6
+)
 
 # load HYDE data ----------------------------------------------------------
-hyde_df <-
-  qs::qread("workflow/05_trend/data/hyde_2023.qs") |>
+hyde_df <- qs::qread("workflow/05_trend/data/hyde_2023.qs") |>
   as_tibble() |>
   relocate(year, river, everything())
 
-hyde_area <-
-  hyde_df |>
+hyde_area <- hyde_df |>
   left_join(ws_area, by = join_by(river)) |>
   mutate(
-    across(c(conv_rangeland:rangeland), ~ {
-      .x / area
-    })
+    across(
+      c(conv_rangeland:rangeland),
+      ~{
+        .x / area
+      }
+    )
   )
 
 hyde_area |>
   select(!contains("rice")) |>
   select(!contains("rainfed")) |>
   gather(
-    type, type_area,
-    -river, -year, -area
+    type,
+    type_area,
+    -river,
+    -year,
+    -area
   ) |>
   group_by(river, type) |>
   reframe(
@@ -70,25 +72,28 @@ hyde_area |>
   facet_wrap(~river, scales = "free_y")
 
 # CUSUM -------------------------------------------------------------------
-hyde_long <-
-  hyde_df |>
+hyde_long <- hyde_df |>
   group_by(river) |>
   complete(year = seq(1925, 2021, by = 1)) |>
   arrange(year, .by_group = TRUE) |>
   mutate(Flag = ifelse(is.na(cropland), "sim", "obs")) |>
-  mutate(across(
-    where(is.double),
-    ~ imputeTS::na_interpolation(.x, "linear")
-  )) |>
+  mutate(
+    across(
+      where(is.double),
+      ~imputeTS::na_interpolation(.x, "linear")
+    )
+  ) |>
   ungroup() |>
   filter(year >= 1925) |>
   gather(
-    type, area,
-    -river, -year, -Flag
+    type,
+    area,
+    -river,
+    -year,
+    -Flag
   )
 
-hyde_cusum <-
-  hyde_long |>
+hyde_cusum <- hyde_long |>
   group_by(river, type) |>
   mutate(
     AreaMean = mean(area, na.rm = TRUE),

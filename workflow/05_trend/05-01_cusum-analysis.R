@@ -17,20 +17,17 @@ clrs <- MetBrewer::met.brewer("Johnson", n = 8)
 clrs[3] <- "grey10"
 
 # 1) Load data ------------------------------------------------------------
-rtop_data <-
-  qs::qread(
-    "workflow/02_rtop-interpolation/data/rtop_cv_7jan23.qs"
-  )
+rtop_data <- qs::qread(
+  "workflow/02_rtop-interpolation/data/rtop_cv_7jan23.qs"
+)
 
-bedload_model <-
-  qs::qread(
-    "workflow/02_rtop-interpolation/data/bedload_model.qs"
-  )
+bedload_model <- qs::qread(
+  "workflow/02_rtop-interpolation/data/bedload_model.qs"
+)
 
-sed_data <-
-  qs::qread(
-    here("workflow", "01_sediment-database", "data", "SSD-yr-all_21dec23.qs")
-  ) |>
+sed_data <- qs::qread(
+  here("workflow", "01_sediment-database", "data", "SSD-yr-all_21dec23.qs")
+) |>
   transmute(
     id = as.character(id),
     year,
@@ -44,8 +41,7 @@ sed_data <-
 summary(bedload_model)
 
 # 2) Tidy data ------------------------------------------------------------
-rtop_pred <-
-  rtop_data |>
+rtop_pred <- rtop_data |>
   select(.pred_df) |>
   unnest(cols = c(.pred_df)) |>
   transmute(
@@ -63,24 +59,22 @@ rtop_pred <-
 # 3) Inflow Summary -------------------------------------------------------
 # Subset only those gauging stations that have
 # inflows directly into the Krasnodar reservoir.
-krasn_inflow <-
-  rtop_pred |>
+krasn_inflow <- rtop_pred |>
   filter(
-    id %in% c(
-      "83174",
-      "83314",
-      "83361",
-      "83387",
-      "Marta",
-      "Apchas",
-      "Shunduk",
-      "Psekups"
-    )
+    id %in%
+      c(
+        "83174",
+        "83314",
+        "83361",
+        "83387",
+        "Marta",
+        "Apchas",
+        "Shunduk",
+        "Psekups"
+      )
   )
 
-
-krasn_both <-
-  krasn_inflow |>
+krasn_both <- krasn_inflow |>
   left_join(
     sed_data,
     by = join_by(id, year)
@@ -121,8 +115,7 @@ krasn_both |>
     "workflow/05_trend/data/ssd_both.qs"
   )
 
-krasn_inflow_summary <-
-  krasn_both |>
+krasn_inflow_summary <- krasn_both |>
   mutate(
     Period = case_when(
       between(year, 2004, 2015) ~ "2005-2016",
@@ -141,8 +134,7 @@ krasn_inflow_summary <-
     .by = c(Period, id)
   )
 
-krasn_budget <-
-  krasn_inflow_summary |>
+krasn_budget <- krasn_inflow_summary |>
   mutate(
     SDtot = case_when(
       id == "83361" ~ SDtot * 1,
@@ -195,35 +187,38 @@ krasn_inflow_summary |>
     BedRate = BedIncome / n,
     TotalRate = TotalIncome / n
   ) |>
-  mutate(across(where(is.numeric), ~ round(.x, 2))) |>
+  mutate(across(where(is.numeric), ~round(.x, 2))) |>
   glimpse()
 
 # rivers_flux is from 04-01_sed-budget-inflow-rates.R
-rivers_flux |> 
-  filter(str_detect(id, "Kuban")) |> 
+rivers_flux |>
+  filter(str_detect(id, "Kuban")) |>
   glimpse()
 
 # Pettitt test ------------------------------------------------------------
-pett <-
-  krasn_both |>
+pett <- krasn_both |>
   group_by(id) |>
   complete(year = seq(1925, 2021, by = 1)) |>
   arrange(year, .by_group = TRUE) |>
   mutate(SSDBoth = imputeTS::na_interpolation(SSDBoth, maxgap = 5)) |>
   mutate(SSDBoth = imputeTS::na_mean(SSDBoth)) |>
   nest() |>
-  mutate(pt = map(
-    data,
-    ~ trend::pettitt.test(.x$SSDBoth)$estimate
-  )) |>
-  mutate(p = map(
-    data,
-    ~ trend::pettitt.test(.x$SSDBoth)$p.value
-  )) |>
+  mutate(
+    pt = map(
+      data,
+      ~trend::pettitt.test(.x$SSDBoth)$estimate
+    )
+  ) |>
+  mutate(
+    p = map(
+      data,
+      ~trend::pettitt.test(.x$SSDBoth)$p.value
+    )
+  ) |>
   unnest(cols = c(pt, p)) |>
   mutate(
-    start = map_dbl(data, ~ first(.x$year)),
-    end = map_dbl(data, ~ last(.x$year))
+    start = map_dbl(data, ~first(.x$year)),
+    end = map_dbl(data, ~last(.x$year))
   ) |>
   select(-data) |>
   ungroup() |>
@@ -233,43 +228,42 @@ pett <-
   ungroup()
 
 set.seed(1234)
-taylor_res <-
-  krasn_both |>
+taylor_res <- krasn_both |>
   group_by(id) |>
   complete(year = seq(1925, 2021, by = 1)) |>
   arrange(year, .by_group = TRUE) |>
   mutate(SSDBoth = imputeTS::na_interpolation(SSDBoth, maxgap = 5)) |>
   mutate(SSDBoth = imputeTS::na_mean(SSDBoth)) |>
   nest() |>
-  mutate(taylor = map(
-    data,
-    ~ change_point_analyzer(
-      x = .x$SSDBoth,
-      labels = .x$year,
-      min_candidate_conf = 0.98,
-      min_tbl_conf = 0.95,
-      n_bootstraps = 5000,
-      CI = 0.95
-      # method = "CUSUM"
+  mutate(
+    taylor = map(
+      data,
+      ~change_point_analyzer(
+        x = .x$SSDBoth,
+        labels = .x$year,
+        min_candidate_conf = 0.98,
+        min_tbl_conf = 0.95,
+        n_bootstraps = 5000,
+        CI = 0.95
+        # method = "CUSUM"
+      )
     )
-  )) |>
+  ) |>
   dplyr::select(-data) |>
   unnest(cols = c(taylor)) |>
   ungroup()
 
-taylor_ci <-
-  taylor_res |>
+taylor_ci <- taylor_res |>
   mutate(
     label_low = str_split(`CI (95%)`, "-", simplify = TRUE)[, 1],
     label_upper = str_split(`CI (95%)`, "-", simplify = TRUE)[, 2],
   ) |>
-  mutate(across(contains("label_"), ~ parse_number(.x)))
+  mutate(across(contains("label_"), ~parse_number(.x)))
 
 print(taylor_ci, n = 100)
 
 # CUSUM -------------------------------------------------------------------
-krasn_cusum <-
-  krasn_both |>
+krasn_cusum <- krasn_both |>
   group_by(id) |>
   complete(year = seq(1925, 2021, by = 1)) |>
   arrange(year, .by_group = TRUE) |>
@@ -289,8 +283,7 @@ krasn_cusum <-
   mutate(CDC = cumsum(K) / SSDCv) |>
   ungroup()
 
-krasn_cusum_plot <-
-  krasn_cusum |>
+krasn_cusum_plot <- krasn_cusum |>
   filter(!is.na(SSDFlag)) |>
   ggplot(
     aes(
@@ -401,15 +394,15 @@ krasn_cusum_plot <-
 
 krasn_cusum_plot
 
-ggmw::mw_save(
+mw_save(
   "figures/fig5_krasnodar-inflow-cusum.png",
   krasn_cusum_plot,
-  w = 22, h = 13
+  w = 22,
+  h = 13
 )
 
 # Create table ----
-taylor_pettitt_table <-
-  taylor_ci |>
+taylor_pettitt_table <- taylor_ci |>
   transmute(
     id,
     TaylorBreak = glue::glue("{label} ({label_low}–{label_upper})")
@@ -433,8 +426,7 @@ writexl::write_xlsx(
 )
 
 # Trends ------------------------------------------------------------------
-taylor_periods <-
-  taylor_res |>
+taylor_periods <- taylor_res |>
   select(id, label) |>
   bind_rows(
     data.frame(
@@ -452,8 +444,7 @@ taylor_periods <-
   mutate(Period = zoo::na.locf(Period)) |>
   ungroup()
 
-krasn_period <-
-  krasn_both |>
+krasn_period <- krasn_both |>
   left_join(
     taylor_periods |>
       select(id, year = label, Period),

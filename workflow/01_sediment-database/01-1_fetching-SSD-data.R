@@ -13,28 +13,25 @@ source(here("R", "funs_excel.R"))
 theme_set(theme_kbn())
 
 # Ermolaev's database -----------------------------------------------------
-df_q_ermol <-
-  openxlsx::read.xlsx(
-    here("data", "hydro", "кубань_для цыпленкова.xlsx"),
-    sheet = 1
-  ) %>%
+df_q_ermol <- openxlsx::read.xlsx(
+  here("data", "hydro", "кубань_для цыпленкова.xlsx"),
+  sheet = 1
+) %>%
   as_tibble() %>%
   rename(id = 1, year = 2, q_mean = 3)
 
-df_ssd_ermol <-
-  openxlsx::read.xlsx(
-    here("data", "hydro", "кубань_для цыпленкова.xlsx"),
-    sheet = 2
-  ) %>%
+df_ssd_ermol <- openxlsx::read.xlsx(
+  here("data", "hydro", "кубань_для цыпленкова.xlsx"),
+  sheet = 2
+) %>%
   as_tibble() %>%
   rename(id = 1, year = 2, ssd_mean = 3)
 
-df_ermol <-
-  full_join(
-    df_q_ermol,
-    df_ssd_ermol,
-    by = c("id", "year")
-  ) %>%
+df_ermol <- full_join(
+  df_q_ermol,
+  df_ssd_ermol,
+  by = c("id", "year")
+) %>%
   group_by(id) %>%
   complete(
     year = seq(min(df_q_ermol$year), 2020, by = 1)
@@ -46,11 +43,10 @@ df_ermol %>%
 # Alexey's database -------------------------------------------------------
 # i.e. 2000-2019
 # Load id database
-gage_id <-
-  openxlsx::read.xlsx(
-    here("data", "hydro", "Список постов.xlsx"),
-    sheet = 2
-  ) %>%
+gage_id <- openxlsx::read.xlsx(
+  here("data", "hydro", "Список постов.xlsx"),
+  sheet = 2
+) %>%
   as_tibble() %>%
   dplyr::select(
     id = `Код.поста`,
@@ -63,26 +59,21 @@ gage_id <-
   mutate(id = as.double(id))
 
 # 2000-2007
-path_2000_2007 <-
-  here("data", "hydro", "итоговый (2000-2007) 19.06.xlsx")
+path_2000_2007 <- here("data", "hydro", "итоговый (2000-2007) 19.06.xlsx")
 
-alex_2007 <-
-  seq_along(readxl::excel_sheets(path_2000_2007)) %>%
+alex_2007 <- seq_along(readxl::excel_sheets(path_2000_2007)) %>%
   as.list() %>%
-  map_dfr(~ sheet_to_table(path_2000_2007, .x))
+  map_dfr(~sheet_to_table(path_2000_2007, .x))
 
 # 2008-2020
-path_2008_2020 <-
-  here("data", "hydro", "итоговый (2008-2020) 1.03.xlsx")
+path_2008_2020 <- here("data", "hydro", "итоговый (2008-2020) 1.03.xlsx")
 
-alex_2019 <-
-  seq_along(excel_sheets(path_2008_2020)) %>%
+alex_2019 <- seq_along(excel_sheets(path_2008_2020)) %>%
   as.list() %>%
-  map_dfr(~ sheet_to_table(path_2008_2020, .x))
+  map_dfr(~sheet_to_table(path_2008_2020, .x))
 
 # Combine Alexey's data together
-df_ssd_alex <-
-  bind_rows(alex_2007, alex_2019) %>%
+df_ssd_alex <- bind_rows(alex_2007, alex_2019) %>%
   # convert year-month-decade to {date}
   mutate(
     date = decade_to_date(year, month, decade),
@@ -104,12 +95,14 @@ df_ssd_alex <-
   ungroup() %>%
   mutate(year = lubridate::year(date)) %>%
   dplyr::select(
-    id, year, date, ssd
+    id,
+    year,
+    date,
+    ssd
   )
 
 # Estimate yearly-based {SSD} stats
-df_ssd_alex_year <-
-  df_ssd_alex %>%
+df_ssd_alex_year <- df_ssd_alex %>%
   group_by(id, year) %>%
   summarise(
     ssd_mean = .mean_na(ssd),
@@ -124,19 +117,15 @@ df_ssd_alex_year %>%
   explore_miss(ssd_mad)
 
 # SSD 1976-1980 -----------------------------------------------------------
-path1976 <-
-  here("data", "hydro", "kuban_1976-1980_ssd-mean.xlsx")
+path1976 <- here("data", "hydro", "kuban_1976-1980_ssd-mean.xlsx")
 
-sheets1976 <-
-  readxl::excel_sheets(path1976)
+sheets1976 <- readxl::excel_sheets(path1976)
 
-data_1976 <-
-  seq(1, length(sheets1976)) %>%
-  map_dfr(~ read_1976(path1976, .sheet = .x))
+data_1976 <- seq(1, length(sheets1976)) %>%
+  map_dfr(~read_1976(path1976, .sheet = .x))
 
 # Mean SSD DB -------------------------------------------------------------
-ssd_year <-
-  df_ssd_ermol %>%
+ssd_year <- df_ssd_ermol %>%
   filter(year < 1976) %>%
   bind_rows(data_1976) %>%
   bind_rows(df_ssd_alex_year) %>%
