@@ -8,7 +8,6 @@ This repository contains the main processing steps to explore sediment load temp
 For a deep introduction to the study, please refer to:
 >Tsyplenkov A, Grachev A, Yermolaev O, Golosov V. Impacts of post-Soviet land-use transformation on sediment dynamics in the Western Caucasus. Journal of Hydrology, *In review*.
 
-
 # Overview
 ## How to reproduce
 We used the [{renv} package](https://rstudio.github.io/renv/articles/renv.html) to create a stable version-specific library of R packages. The work itself was done on an Ubuntu 22.04 WSL2 remote machine in R `4.4.1`. In order to replicate the analysis and the environment, the following steps are recommended:
