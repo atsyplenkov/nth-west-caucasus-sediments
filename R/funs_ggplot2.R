@@ -95,3 +95,22 @@ kbn_colors <-
       return(inferno_pal)
     }
   }
+
+# Save function ----------------------------------------------------------
+mw_save <-
+  function(filename,
+           plot,
+           dpi = 1000,
+           w = 16,
+           h = 12,
+           units = "cm") {
+    ggplot2::ggsave(
+      filename = filename,
+      plot = plot,
+      device = ragg::agg_png,
+      dpi = dpi,
+      width = w,
+      height = h,
+      units = units
+    )
+  }
