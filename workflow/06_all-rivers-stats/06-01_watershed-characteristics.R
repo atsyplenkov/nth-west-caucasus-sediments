@@ -10,47 +10,54 @@ library(santoku)
 library(sjPlot)
 
 source("R/funs_ggplot2.R")
-theme_set(theme_kbn())
+ggplot2::theme_set(theme_kbn())
 
 clrs <- MetBrewer::met.brewer("Johnson", n = 8)
 clrs[3] <- "grey10"
 
 # Sediment data
 sed_data <- qs::qread(
-  here("workflow", "01_sediment-database", "data", "SSD-yr-all_21dec23.qs")
+  here::here(
+    "workflow",
+    "01_sediment-database",
+    "data",
+    "SSD-yr-all_21dec23.qs"
+  )
 ) |>
-  mutate(id = as.character(id)) |>
-  select(id:ssd_mean)
+  dplyr::mutate(id = as.character(id)) |>
+  dplyr::select(id:ssd_mean)
 
 # Point data ---------------------------------------------------------
-kbn_gages <- st_read(
-  here("data", "vector", "kbn_gages", "kbn_gages.shp"),
-  query = "SELECT * FROM kbn_gages WHERE region = 'nw'"
+kbn_gages <- sf::st_read(
+  here::here("data", "vector", "kbn_gages", "kbn_gages.shp"),
+  query = "SELECT * FROM kbn_gages WHERE region = 'nw'",
+  quiet = TRUE
 ) |>
-  mutate(id = as.character(id))
+  dplyr::mutate(id = as.character(id))
 
 # Keep only "pristine" gages
 rtop_ids <- kbn_gages |>
-  filter(is.na(status2)) |>
-  pull(id)
+  dplyr::filter(is.na(status2)) |>
+  dplyr::pull(id)
 
 north_ids <- kbn_gages |>
-  pull(id)
+  dplyr::pull(id)
 
 # 2) Watersheds -----------------------------------------------------------
-ws_all <- st_read(
-  here("data/vector/kbn_ws_30dec/kbn_ws_30dec.shp"),
-  query = "SELECT id, area FROM kbn_ws_30dec"
+ws_all <- sf::st_read(
+  here::here("data/vector/kbn_ws_30dec/kbn_ws_30dec.shp"),
+  query = "SELECT id, area FROM kbn_ws_30dec",
+  quiet = TRUE
 ) |>
-  mutate(
+  dplyr::mutate(
     id = as.character(id)
   ) |>
-  filter(id %in% north_ids) |>
-  ms_simplify(keep = 0.3)
+  dplyr::filter(id %in% north_ids) |>
+  rmapshaper::ms_simplify(keep = 0.3)
 
 # Observed data
 ws_obs <- ws_all |>
-  filter(id %in% rtop_ids)
+  dplyr::filter(id %in% rtop_ids)
 
 # Raster paths ------------------------------------------------------------
 global_path <- ifelse(

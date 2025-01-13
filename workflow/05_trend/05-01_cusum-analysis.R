@@ -5,9 +5,10 @@ library(trend)
 library(ChangePointTaylor)
 library(geomtextpath)
 
-source(here("R", "funs_ggplot2.R"))
+source(here::here("R", "funs_ggplot2.R"))
 
-theme_set(theme_kbn())
+ggplot2::theme_set(theme_kbn())
+
 # theme_replace(
 #   axis.title.y = element_text(size = rel(0.9),
 #                               angle = 90)
@@ -42,9 +43,9 @@ summary(bedload_model)
 
 # 2) Tidy data ------------------------------------------------------------
 rtop_pred <- rtop_data |>
-  select(.pred_df) |>
-  unnest(cols = c(.pred_df)) |>
-  transmute(
+  dplyr::select(.pred_df) |>
+  tidyr::unnest(cols = c(.pred_df)) |>
+  dplyr::transmute(
     year,
     id,
     area,
@@ -75,22 +76,22 @@ krasn_inflow <- rtop_pred |>
   )
 
 krasn_both <- krasn_inflow |>
-  left_join(
+  dplyr::left_join(
     sed_data,
-    by = join_by(id, year)
+    by = dplyr::join_by(id, year)
   ) |>
-  mutate(
+  dplyr::mutate(
     SSDBoth = ifelse(is.na(ssd_mean), ssd_sim, ssd_mean),
     SSDFlag = ifelse(is.na(ssd_mean), "Sim", "Obs")
   ) |>
-  mutate(
+  dplyr::mutate(
     bed_f = 28.21 / (95.25 + SSDBoth),
     tot_sd = SSDBoth / (1 - bed_f),
     ssd_tyr = SSDBoth * 31536 / 10^6,
     tot_tyr = tot_sd * 31536 / 10^6
   ) |>
-  mutate(
-    id = case_when(
+  dplyr::mutate(
+    id = dplyr::case_when(
       id == "83174" ~ glue::glue("Kuban (No. {id})"),
       id == "83314" ~ glue::glue("Laba (No. {id})"),
       id == "83361" ~ glue::glue("Belaya (No. {id})"),
@@ -101,10 +102,10 @@ krasn_both <- krasn_inflow |>
 
 # Save
 krasn_both |>
-  transmute(
+  dplyr::transmute(
     Year = year,
     id,
-    river = str_split_i(id, " \\(", i = 1),
+    river = stringr::str_split_i(id, " \\(", i = 1),
     Area = area,
     SSDBoth,
     SSDFlag,
@@ -115,117 +116,121 @@ krasn_both |>
     "workflow/05_trend/data/ssd_both.qs"
   )
 
+# FIXME:
 krasn_inflow_summary <- krasn_both |>
-  mutate(
-    Period = case_when(
-      between(year, 2004, 2015) ~ "2005-2016",
-      between(year, 2016, 2021) ~ "2016-2021",
+  dplyr::mutate(
+    Period = dplyr::case_when(
+      dplyr::between(year, 2004, 2015) ~ "2005-2016",
+      dplyr::between(year, 2016, 2021) ~ "2016-2021",
       TRUE ~ NA_character_
     )
   ) |>
-  filter(!is.na(Period)) |>
-  summarise(
-    n = n(),
-    A = unique(area),
-    SSDmean = mean(SSDBoth),
-    BFmean = mean(bed_f),
+  dplyr::filter(!is.na(Period)) |>
+  dplyr::summarise(
+    n = dplyr::n(),
+    A = terra::unique(area),
+    SSDmean = terra::mean(SSDBoth),
+    BFmean = terra::mean(bed_f),
     SSDtot = sum(ssd_tyr),
     SDtot = sum(tot_tyr),
     .by = c(Period, id)
   )
 
 krasn_budget <- krasn_inflow_summary |>
-  mutate(
-    SDtot = case_when(
+  dplyr::mutate(
+    SDtot = dplyr::case_when(
       id == "83361" ~ SDtot * 1,
       TRUE ~ SDtot
     )
   ) |>
-  mutate(
-    SSDtot = case_when(
+  dplyr::mutate(
+    SSDtot = dplyr::case_when(
       id == "83361" ~ SSDtot * 1,
       TRUE ~ SSDtot
     )
   ) |>
-  group_by(Period) |>
-  summarise(
+  dplyr::group_by(Period) |>
+  dplyr::summarise(
     FluxSS = sum(SSDtot),
     FluxBS = sum(SDtot) - sum(SSDtot),
     FluxTot = sum(SDtot)
   ) |>
-  mutate(
-    V = case_when(
+  dplyr::mutate(
+    V = dplyr::case_when(
       Period == "2005-2016" ~ 83,
       TRUE ~ 24.66
     ),
-    Shore = case_when(
+    Shore = dplyr::case_when(
       Period == "2005-2016" ~ 0.79,
       TRUE ~ 0.22
     ),
     .after = 1
   ) |>
-  mutate(
+  dplyr::mutate(
     Income = FluxTot + Shore * 1.7,
     Storage = V * 0.96,
     Error = 100 * (Income - Storage) / Storage
   )
 
 krasn_budget
-glimpse(krasn_budget)
+dplyr::glimpse(krasn_budget)
 
 # Section 4.3 description ------------------------------------------------
 krasn_inflow_summary |>
-  group_by(Period, n) |>
-  reframe(
+  dplyr::group_by(Period, n) |>
+  dplyr::reframe(
     SusIncome = sum(SSDtot),
     BedIncome = sum(SDtot) - sum(SSDtot),
     TotalIncome = sum(SDtot)
   ) |>
   # Estimate mean annual rates
-  mutate(
+  dplyr::mutate(
     SusRate = SusIncome / n,
     BedRate = BedIncome / n,
     TotalRate = TotalIncome / n
   ) |>
-  mutate(across(where(is.numeric), ~round(.x, 2))) |>
-  glimpse()
+  dplyr::mutate(
+    dplyr::across(dplyr::where(is.numeric), ~terra::round(.x, 2))
+  ) |>
+  dplyr::glimpse()
 
+# FIXME:
 # rivers_flux is from 04-01_sed-budget-inflow-rates.R
 rivers_flux |>
-  filter(str_detect(id, "Kuban")) |>
-  glimpse()
+  dplyr::filter(stringr::str_detect(id, "Kuban")) |>
+  dplyr::glimpse()
 
 # Pettitt test ------------------------------------------------------------
 pett <- krasn_both |>
-  group_by(id) |>
-  complete(year = seq(1925, 2021, by = 1)) |>
-  arrange(year, .by_group = TRUE) |>
-  mutate(SSDBoth = imputeTS::na_interpolation(SSDBoth, maxgap = 5)) |>
-  mutate(SSDBoth = imputeTS::na_mean(SSDBoth)) |>
-  nest() |>
-  mutate(
-    pt = map(
+  dplyr::group_by(id) |>
+  tidyr::complete(year = seq(1925, 2021, by = 1)) |>
+  dplyr::arrange(year, .by_group = TRUE) |>
+  dplyr::mutate(SSDBoth = imputeTS::na_interpolation(SSDBoth, maxgap = 5)) |>
+  dplyr::mutate(SSDBoth = imputeTS::na_mean(SSDBoth)) |>
+  tidyr::nest() |>
+  dplyr::mutate(
+    pt = purrr::map(
       data,
       ~trend::pettitt.test(.x$SSDBoth)$estimate
     )
   ) |>
-  mutate(
-    p = map(
+  dplyr::mutate(
+    p = purrr::map(
       data,
       ~trend::pettitt.test(.x$SSDBoth)$p.value
     )
   ) |>
-  unnest(cols = c(pt, p)) |>
-  mutate(
-    start = map_dbl(data, ~first(.x$year)),
-    end = map_dbl(data, ~last(.x$year))
+  tidyr::unnest(cols = c(pt, p)) |>
+  dplyr::mutate(
+    start = purrr::map_dbl(data, ~dplyr::first(.x$year)),
+    end = purrr::map_dbl(data, ~dplyr::last(.x$year))
   ) |>
-  select(-data) |>
-  ungroup() |>
-  mutate(p_factor = ifelse(p < 0.05, "sign", "non")) |>
-  rowwise() |>
-  mutate(break_year = seq(start, end)[pt]) |>
-  ungroup()
+  dplyr::select(-data) |>
+  dplyr::ungroup() |>
+  dplyr::mutate(p_factor = ifelse(p < 0.05, "sign", "non")) |>
+  dplyr::rowwise() |>
+  dplyr::mutate(break_year = seq(start, end)[pt]) |>
+  dplyr::ungroup()
 
 set.seed(1234)
 taylor_res <- krasn_both |>
