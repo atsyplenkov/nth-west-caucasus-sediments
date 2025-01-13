@@ -25,7 +25,7 @@ The repository is organized as follows:
 ├── tables
 └── workflow
 ```
-Here's how this repo is organized:
+where
 - `analysis`: Where all the juicy results live, mosty for internal use
 - `data`: Home to our raw data. However, some data is too big to be uploaded and can be shared upon request
 - `figures`: You guessed it - all the visualizations
