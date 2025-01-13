@@ -17,40 +17,35 @@ theme_set(theme_kbn())
 val_metrics <- metric_set(ccc, rsq, nse)
 
 # 1) Point data ---------------------------------------------------------
-kbn_gages <-
-  st_read(
-    here("data", "vector", "kbn_gages", "kbn_gages.shp"),
-    query = "SELECT * FROM kbn_gages WHERE region = 'nw'"
-  ) |>
+kbn_gages <- st_read(
+  here("data", "vector", "kbn_gages", "kbn_gages.shp"),
+  query = "SELECT * FROM kbn_gages WHERE region = 'nw'"
+) |>
   mutate(id = as.character(id))
 
 # Keep only "pristine" gages
-rtop_ids <-
-  kbn_gages |>
+rtop_ids <- kbn_gages |>
   filter(is.na(status2)) |>
   filter(id != "83361") |> # for validation
   pull(id)
 
-north_ids <-
-  kbn_gages |>
+north_ids <- kbn_gages |>
   pull(id)
 
 # 2) Watersheds -----------------------------------------------------------
-ws_ter <-
-  st_read(
-    here("data/vector/ter_ws-6931/ter_ws-6931.shp")
-  ) |>
+ws_ter <- st_read(
+  here("data/vector/ter_ws-6931/ter_ws-6931.shp")
+) |>
   filter(is.na(status2)) |>
   transmute(
     id = label,
     area
   )
 
-ws_all <-
-  st_read(
-    here("data/vector/kbn_ws_30dec/kbn_ws_30dec.shp"),
-    query = "SELECT id, area FROM kbn_ws_30dec"
-  ) |>
+ws_all <- st_read(
+  here("data/vector/kbn_ws_30dec/kbn_ws_30dec.shp"),
+  query = "SELECT id, area FROM kbn_ws_30dec"
+) |>
   mutate(
     id = as.character(id)
   ) |>
@@ -59,11 +54,10 @@ ws_all <-
   bind_rows(ws_ter) |>
   ms_simplify(keep = 0.3)
 
-ws_new <-
-  st_read(
-    here("data/vector/kbn_ws-predict/kbn_ws-predict.shp"),
-    query = "SELECT * FROM \"kbn_ws-predict\" WHERE id IS NULL"
-  ) |>
+ws_new <- st_read(
+  here("data/vector/kbn_ws-predict/kbn_ws-predict.shp"),
+  query = "SELECT * FROM \"kbn_ws-predict\" WHERE id IS NULL"
+) |>
   st_transform(6931) |>
   transmute(
     id = river,
@@ -72,19 +66,16 @@ ws_new <-
   rename(geometry = "_ogr_geometry_")
 
 # Observed data
-ws_obs <-
-  ws_all |>
+ws_obs <- ws_all |>
   filter(id %in% rtop_ids | str_detect(id, "-"))
 
 # Predict to
-ws_pred <-
-  ws_all |>
+ws_pred <- ws_all |>
   filter(!str_detect(id, "-")) |>
   bind_rows(ws_new)
 
 # Original Gauging station density
-region_area_original <-
-  ws_obs |>
+region_area_original <- ws_obs |>
   filter(!str_detect(id, "-")) |>
   terra::vect() |>
   terra::aggregate() |>
@@ -97,8 +88,7 @@ ws_obs |>
 # > 1.560525
 
 # New Gauging station density
-region_area <-
-  ws_obs |>
+region_area <- ws_obs |>
   terra::vect() |>
   terra::aggregate() |>
   terra::expanse("km")
@@ -107,20 +97,18 @@ nrow(ws_obs) / (region_area / 10^3)
 # > 1.712814
 
 # 3) Sediment data --------------------------------------------------------
-ter_data <-
-  readxl::read_excel(
-    here("data/hydro/terek_SY.xlsx"),
-    sheet = "data_kgs",
-    range = "A2:AW96"
-  ) |>
+ter_data <- readxl::read_excel(
+  here("data/hydro/terek_SY.xlsx"),
+  sheet = "data_kgs",
+  range = "A2:AW96"
+) |>
   rename(year = 1) |>
   gather(id, ssd_mean, -year) |>
   relocate(year, .after = id)
 
-sed_data <-
-  qs::qread(
-    here("workflow", "01_sediment-database", "data", "SSD-yr-all_21dec23.qs")
-  ) |>
+sed_data <- qs::qread(
+  here("workflow", "01_sediment-database", "data", "SSD-yr-all_21dec23.qs")
+) |>
   mutate(id = as.character(id)) |>
   select(id:ssd_mean) |>
   bind_rows(
@@ -128,8 +116,7 @@ sed_data <-
   )
 
 # 4) Merge data -----------------------------------------------------------
-ws_obs_sy <-
-  ws_obs |>
+ws_obs_sy <- ws_obs |>
   left_join(
     sed_data,
     by = join_by(id)
@@ -140,30 +127,30 @@ ws_obs_sy <-
 # BoxCox transformation
 # To get back to normal values use
 # mutate(.pred = df_new^(1/lamda))
-boxcox_l <-
-  forecast::BoxCox.lambda(ws_obs_sy$ssy,
-    method = "loglik",
-    lower = -3,
-    upper = 3
-  )
+boxcox_l <- forecast::BoxCox.lambda(
+  ws_obs_sy$ssy,
+  method = "loglik",
+  lower = -3,
+  upper = 3
+)
 
 boxcox_l
 # > 0.05
 
-ws_obs_box <-
-  ws_obs_sy |>
+ws_obs_box <- ws_obs_sy |>
   mutate(obs = ssy^boxcox_l)
 
 # Viz Miss -----------------------------------------------------------
-ssd_miss <-
-  ws_obs_sy |>
+ssd_miss <- ws_obs_sy |>
   st_drop_geometry() |>
   as_tibble() |>
-  mutate(Region = ifelse(
-    str_detect(id, "-"),
-    "Terek River basin",
-    "Krasnodar Reservoir basin"
-  )) |>
+  mutate(
+    Region = ifelse(
+      str_detect(id, "-"),
+      "Terek River basin",
+      "Krasnodar Reservoir basin"
+    )
+  ) |>
   group_by(Region, id) |>
   mutate(ssd_a = data.table::rleid(is.na(ssd_mean))) |>
   filter(!is.na(ssd_mean)) |>
@@ -175,8 +162,7 @@ ssd_miss <-
     .groups = "drop"
   )
 
-id_order <-
-  ssd_miss |>
+id_order <- ssd_miss |>
   distinct(Region, id, n) |>
   group_by(Region) |>
   arrange(desc(n), .by_group = TRUE)
@@ -192,8 +178,10 @@ ssd_miss |>
   ggplot() +
   geom_segment(
     aes(
-      x = start, xend = end,
-      y = id, yend = id
+      x = start,
+      xend = end,
+      y = id,
+      yend = id
     ),
     linewidth = 1.1
   ) +
@@ -216,31 +204,31 @@ ssd_miss |>
 # Gage station description ----
 # Gauging station names
 ## Terek River basin
-terek_names <-
-  readxl::read_excel(
-    "data/hydro/terek_SY.xlsx",
-    sheet = 1,
-    range = "A2:B39",
-    col_names = c("label", "id")
-  ) |>
+terek_names <- readxl::read_excel(
+  "data/hydro/terek_SY.xlsx",
+  sheet = 1,
+  range = "A2:B39",
+  col_names = c("label", "id")
+) |>
   dplyr::mutate(
     label = stringi::stri_trans_general(
       label,
       "russian-latin/bgn"
     ),
     label = stringr::str_replace(
-      label, "-", "—"
+      label,
+      "-",
+      "—"
     ),
     id = as.character(id)
   )
 
 ## Kuban River basin
-kuban_names <-
-  readxl::read_excel(
-    "data/hydro/gage_id-24082022.xlsx",
-    sheet = 1,
-    range = "A1:D81"
-  ) |>
+kuban_names <- readxl::read_excel(
+  "data/hydro/gage_id-24082022.xlsx",
+  sheet = 1,
+  range = "A1:D81"
+) |>
   dplyr::transmute(
     label = glue::glue("{river} – {gage}"),
     label = stringi::stri_trans_general(
@@ -257,8 +245,7 @@ kuban_names <-
     )
   )
 
-ws_stats <-
-  ws_obs_sy |>
+ws_stats <- ws_obs_sy |>
   st_drop_geometry() |>
   as_tibble() |>
   group_by(id, area) |>
@@ -270,14 +257,13 @@ ws_stats <-
     ssy_sd = sd(ssy)
   )
 
-supp_table <-
-  ssd_miss |>
+supp_table <- ssd_miss |>
   filter(n > 1) |>
   left_join(
     ws_stats,
     by = join_by(id)
   ) |>
-  mutate(across(where(is.numeric), ~ atslib::smart_round(.x))) |>
+  mutate(across(where(is.numeric), ~atslib::smart_round(.x))) |>
   left_join(
     bind_rows(
       kuban_names,
@@ -302,15 +288,13 @@ writexl::write_xlsx(
 # 5) Predict --------------------------------------------------------------
 library(rtop)
 
-params <-
-  list(gDist = TRUE, cloud = TRUE)
+params <- list(gDist = TRUE, cloud = TRUE)
 
 # 6) Prediction -----------------------------------------------------------
 library(furrr)
 plan(multisession, workers = 15)
 
-years_available <-
-  ws_obs_box |>
+years_available <- ws_obs_box |>
   st_drop_geometry() |>
   count(year, sort = TRUE) |>
   filter(n >= 10) |>
@@ -319,10 +303,9 @@ years_available <-
   sort()
 
 set.seed(123)
-ssd_uk <-
-  years_available |>
+ssd_uk <- years_available |>
   future_map_dfr(
-    ~ kbn_rtop(
+    ~kbn_rtop(
       ws_obs_box,
       .year = .x,
       .iter = 2000,
@@ -337,8 +320,7 @@ ssd_uk |>
   unnest(c(.cv_res)) |>
   ggdist::mean_qi(CCC)
 
-ssd_uk_cv <-
-  ssd_uk |>
+ssd_uk_cv <- ssd_uk |>
   select(.cv_df) |>
   unnest(c(.cv_df))
 
@@ -349,22 +331,18 @@ hydroGOF::NSE(ssd_uk_cv$var1.pred, ssd_uk_cv$obs)
 
 # Find rtop outliers based on Cook's Distance
 
-cv_df <-
-  ssd_uk |>
+cv_df <- ssd_uk |>
   select(.cv_df) |>
   unnest(c(.cv_df))
 
-mod <-
-  lm(var1.pred ~ obs - 1, data = cv_df)
+mod <- lm(var1.pred ~ obs - 1, data = cv_df)
 
-cooksd <-
-  cooks.distance(mod)
+cooksd <- cooks.distance(mod)
 
 # cutoff <- 4 / length(cooksd)
 cutoff <- 1 * mean(cooksd)
 
-cutoff_df <-
-  cv_df[cooksd > cutoff, ]
+cutoff_df <- cv_df[cooksd > cutoff, ]
 # bind_rows(
 #   filter(
 #     cv_df,
@@ -381,8 +359,7 @@ cutoff_df <-
 #   )
 # )
 
-cv1_plot <-
-  ssd_uk |>
+cv1_plot <- ssd_uk |>
   select(.cv_df) |>
   unnest(c(.cv_df)) |>
   ggplot(
@@ -396,10 +373,7 @@ cv1_plot <-
   ) +
   geom_point() +
   ggpmisc::stat_poly_eq(
-    aes(label = paste(stat(eq.label),
-      stat(rr.label),
-      sep = "~~~~"
-    )),
+    aes(label = paste(stat(eq.label), stat(rr.label), sep = "~~~~")),
     formula = y ~ x
   ) +
   geom_smooth(
@@ -428,10 +402,9 @@ cv1_plot
 # Repeat CV without influential catchment-years
 
 set.seed(123)
-ssd_uk2 <-
-  years_available |>
+ssd_uk2 <- years_available |>
   future_map_dfr(
-    ~ kbn_rtop(
+    ~kbn_rtop(
       ws_obs_box,
       .year = .x,
       .iter = 2000,
@@ -452,13 +425,11 @@ ssd_uk2 |>
   # filter(id != "83216") |>
   yardstick::ccc(truth = obs, estimate = var1.pred)
 
-ssd_uk2_cv <-
-  ssd_uk2 |>
+ssd_uk2_cv <- ssd_uk2 |>
   select(.cv_df) |>
   unnest(c(.cv_df))
 
-cv_metrics <-
-  ssd_uk2_cv |>
+cv_metrics <- ssd_uk2_cv |>
   val_metrics(obs, var1.pred) |>
   transmute(
     .metric = c("CCC", "R^2", "NSE"),
@@ -466,15 +437,16 @@ cv_metrics <-
     .estimate = round(.estimate, 2)
   )
 
-cv_scatter <-
-  ssd_uk2 |>
+cv_scatter <- ssd_uk2 |>
   select(.cv_df) |>
   unnest(c(.cv_df)) |>
   mutate(facet = "(a) Cross-Validation") |>
-  ggplot(aes(
-    x = obs,
-    y = var1.pred
-  )) +
+  ggplot(
+    aes(
+      x = obs,
+      y = var1.pred
+    )
+  ) +
   geom_abline(linetype = "dashed") +
   geom_point(alpha = 0.25) +
   ggpp::geom_table_npc(
@@ -497,8 +469,7 @@ cv_scatter <-
   ) +
   facet_wrap(~facet)
 
-cv_hist <-
-  ssd_uk2 |>
+cv_hist <- ssd_uk2 |>
   select(.cv_df) |>
   unnest(c(.cv_df)) |>
   mutate(facet = "(c) Cross-Validation") |>
@@ -533,12 +504,11 @@ cv_hist <-
     panel.grid.major.y = element_blank()
   )
 
-cv_plot <-
-  cv_scatter + cv_hist
+cv_plot <- cv_scatter + cv_hist
 
 cv_plot
 
-ggmw::mw_save(
+mw_save(
   here("workflow/02_rtop-interpolation/figures/cv_qa.png"),
   cv_plot,
   w = 20,
@@ -554,52 +524,52 @@ ggmw::mw_save(
 # Krasnodar gage validation -----------------------------------------------
 library(ggpmisc)
 
-ssd_uk2 <-
-  qs::qread(here("workflow/02_rtop-interpolation/data/rtop_cv_7jan23.qs"))
+ssd_uk2 <- qs::qread(
+  here("workflow/02_rtop-interpolation/data/rtop_cv_7jan23.qs")
+)
 
-krasnodar_tyr <-
-  sed_data |>
+krasnodar_tyr <- sed_data |>
   filter(id == "83183") |>
   mutate(
     ssd_tyr = ssd_mean * 31536 / 10^6
   ) |>
   drop_na(ssd_mean)
 
-model_area <-
-  ws_pred |>
+model_area <- ws_pred |>
   filter(
-    id %in% c(
-      "Psekups",
-      "Shunduk",
-      "Apchas",
-      "Marta",
-      "83387",
-      "83361",
-      "83314",
-      "83174",
-      "83413"
-    )
+    id %in%
+      c(
+        "Psekups",
+        "Shunduk",
+        "Apchas",
+        "Marta",
+        "83387",
+        "83361",
+        "83314",
+        "83174",
+        "83413"
+      )
   ) |>
   terra::vect() |>
   terra::aggregate() |>
   terra::expanse("km")
 
-krasnodar_db <-
-  ssd_uk2$.pred_df |>
+krasnodar_db <- ssd_uk2$.pred_df |>
   bind_rows() |>
   as_tibble() |>
   filter(
-    id %in% c(
-      "Psekups",
-      "Shunduk",
-      "Apchas",
-      "Marta",
-      "83387",
-      "83361",
-      "83314",
-      "83174",
-      "83413"
-    )
+    id %in%
+      c(
+        "Psekups",
+        "Shunduk",
+        "Apchas",
+        "Marta",
+        "83387",
+        "83361",
+        "83314",
+        "83174",
+        "83413"
+      )
   ) |>
   mutate(
     ssd_mean = var1.pred^(1 / boxcox_l),
@@ -607,8 +577,7 @@ krasnodar_db <-
     ssd_tyr = ssd_sim * 31536 / 10^6
   )
 
-krasnodar_db_tot <-
-  krasnodar_db |>
+krasnodar_db_tot <- krasnodar_db |>
   group_by(year) |>
   reframe(
     upstream_tyr = sum(ssd_tyr)
@@ -632,17 +601,21 @@ krasnodar_tyr |>
   ggdist::mean_qi(rel)
 # > 31.2 %
 
-krasnodar_metrics <-
-  krasnodar_tyr |>
+krasnodar_metrics <- krasnodar_tyr |>
   filter(year < 1945) |>
   # filter(year > 1945) |>
   left_join(
     krasnodar_db_tot,
     by = join_by(year)
   ) |>
-  mutate(across(c(ssd_tyr, upstream_tyr_new), ~ {
-    .x^0.05
-  })) |>
+  mutate(
+    across(
+      c(ssd_tyr, upstream_tyr_new),
+      ~{
+        .x^0.05
+      }
+    )
+  ) |>
   val_metrics(ssd_tyr, upstream_tyr_new) |>
   transmute(
     .metric = c("CCC", "R^2", "NSE"),
@@ -650,22 +623,19 @@ krasnodar_metrics <-
     .estimate = round(.estimate, 2)
   )
 
-val_scatter <-
-  krasnodar_tyr |>
+val_scatter <- krasnodar_tyr |>
   # filter(year > 1945 & year < 1973) |>
   filter(year < 1945) |>
-  left_join(krasnodar_db_tot,
-    by = join_by(year)
-  ) |>
+  left_join(krasnodar_db_tot, by = join_by(year)) |>
   mutate(facet = "(b) g/s Krasnodar City") |>
-  ggplot(aes(
-    y = (upstream_tyr_new)^0.05,
-    x = (ssd_tyr)^0.05
-  )) +
-  stat_poly_line(color = "firebrick4") +
-  stat_poly_eq(use_label("eq"),
-    family = "Merriweather"
+  ggplot(
+    aes(
+      y = (upstream_tyr_new)^0.05,
+      x = (ssd_tyr)^0.05
+    )
   ) +
+  stat_poly_line(color = "firebrick4") +
+  stat_poly_eq(use_label("eq"), family = "Merriweather") +
   geom_abline(linetype = "dashed") +
   geom_point(alpha = 0.65) +
   ggpp::geom_table_npc(
@@ -678,7 +648,8 @@ val_scatter <-
     family = "Merriweather",
     table.theme = ttheme_gtminimal
   ) +
-  ggrepel::geom_text_repel(aes(label = year),
+  ggrepel::geom_text_repel(
+    aes(label = year),
     family = "Merriweather",
     size = 3,
   ) +
@@ -694,8 +665,7 @@ val_scatter <-
 
 val_scatter
 
-val_hist <-
-  krasnodar_tyr |>
+val_hist <- krasnodar_tyr |>
   # filter(year > 1945 & year < 1973) |>
   filter(year < 1945) |>
   left_join(
@@ -748,13 +718,11 @@ val_hist
 #
 # cv_val_plot
 
-
-cv_val_plot <-
-  cv_scatter + val_scatter + (cv_hist / val_hist)
+cv_val_plot <- cv_scatter + val_scatter + (cv_hist / val_hist)
 
 cv_val_plot
 
-ggmw::mw_save(
+mw_save(
   here("workflow/02_rtop-interpolation/figures/cv_qa.png"),
   cv_val_plot,
   w = 25,
@@ -777,9 +745,6 @@ data.frame(
     mean(error)
   )
 
-
-
-
 # Validation --------------------------------------------------------------
 ssd_uk2$.pred_df |>
   bind_rows() |>
@@ -791,7 +756,8 @@ ssd_uk2$.pred_df |>
   left_join(
     sed_data,
     by = join_by(
-      id, year
+      id,
+      year
     )
   ) |>
   ggplot(
@@ -803,10 +769,7 @@ ssd_uk2$.pred_df |>
   geom_abline(slope = 1) +
   geom_point() +
   ggpmisc::stat_poly_eq(
-    aes(label = paste(stat(eq.label),
-      stat(adj.rr.label),
-      sep = "~~~~"
-    )),
+    aes(label = paste(stat(eq.label), stat(adj.rr.label), sep = "~~~~")),
     formula = y ~ x - 1
   ) +
   geom_smooth(
@@ -840,10 +803,7 @@ ssd_uk2 |>
   geom_abline(slope = 1) +
   geom_point() +
   ggpmisc::stat_poly_eq(
-    aes(label = paste(stat(eq.label),
-      stat(adj.rr.label),
-      sep = "~~~~"
-    )),
+    aes(label = paste(stat(eq.label), stat(adj.rr.label), sep = "~~~~")),
     formula = y ~ x - 1
   ) +
   geom_smooth(
@@ -883,23 +843,23 @@ ssd_uk2 |>
     shape = 21
   )
 
-
 ssd_uk2 |>
   select(.pred_df) |>
   unnest(c(.pred_df)) |>
   filter(
-    id %in% c(
-      "Psekups",
-      "Shunduk",
-      "Apchas",
-      "Marta",
-      "83387",
-      "83361",
-      "83314",
-      "83174",
-      "83413",
-      "83307"
-    )
+    id %in%
+      c(
+        "Psekups",
+        "Shunduk",
+        "Apchas",
+        "Marta",
+        "83387",
+        "83361",
+        "83314",
+        "83174",
+        "83413",
+        "83307"
+      )
   ) |>
   mutate(
     ssd_sim = var1.pred^(1 / boxcox_l),
@@ -919,15 +879,13 @@ select(-var1.var:-sumWeights) |>
 # )
 
 # 8) Compare --------------------------------------------------------------
-ssd_uk <-
-  qs::qread(
-    here("workflow", "02_rtop-interpolation", "data", "rtop_2000.qs")
-  )
+ssd_uk <- qs::qread(
+  here("workflow", "02_rtop-interpolation", "data", "rtop_2000.qs")
+)
 
 library(yardstick)
 
-ws_pred_qa <-
-  ws_pred |>
+ws_pred_qa <- ws_pred |>
   left_join(
     sed_data,
     by = join_by(id)
@@ -944,8 +902,7 @@ ws_pred_qa <-
     by = join_by(id, year)
   )
 
-ws_obs_qa <-
-  ws_obs_box |>
+ws_obs_qa <- ws_obs_box |>
   st_drop_geometry() |>
   as_tibble() |>
   left_join(
@@ -972,10 +929,7 @@ ws_pred_qa |>
   ) +
   geom_point() +
   ggpmisc::stat_poly_eq(
-    aes(label = paste(stat(eq.label),
-      stat(adj.rr.label),
-      sep = "~~~~"
-    )),
+    aes(label = paste(stat(eq.label), stat(adj.rr.label), sep = "~~~~")),
     formula = y ~ x
   ) +
   geom_smooth(
@@ -1046,7 +1000,6 @@ ssd_uk2 |>
   geom_point() +
   tune::coord_obs_pred()
 
-
 ssd_uk2 |>
   select(.cv_df) |>
   unnest(c(.cv_df)) |>
@@ -1060,7 +1013,6 @@ ssd_uk2 |>
   geom_abline(slope = 1) +
   geom_point() +
   tune::coord_obs_pred()
-
 
 ssd_uk2 |>
   select(.pred_df) |>

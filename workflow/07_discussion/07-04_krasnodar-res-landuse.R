@@ -30,8 +30,8 @@ krasnodar_res_2015 <-
   )
 
 krasnodar_res_2015 |>
-  mutate(
-    land_cover = case_when(
+  dplyr::mutate(
+    land_cover = dplyr::case_when(
       Value == 1 ~ "Coniferous forest",
       Value == 2 ~ "Mixed forest",
       Value == 3 ~ "Deciduous forest",
@@ -44,21 +44,20 @@ krasnodar_res_2015 |>
       Value == 10 ~ "Snow and ice"
     )
   ) |>
-  mutate(
-    land_cover_groups =
-      case_when(
-        stringr::str_detect(land_cover, "forest") ~ "Forest",
-        TRUE ~ land_cover
-      )
+  dplyr::mutate(
+    land_cover_groups = dplyr::case_when(
+      stringr::str_detect(land_cover, "forest") ~ "Forest",
+      TRUE ~ land_cover
+    )
   ) |>
-  group_by(land_cover_groups) |>
+  dplyr::group_by(land_cover_groups) |>
   dplyr::summarise(
     PixelCount = sum(PixelCount),
     AreaM = sum(AreaM)
   ) |>
-  ungroup() |>
+  dplyr::ungroup() |>
   dplyr::mutate(
     pct = 100 * PixelCount / sum(PixelCount),
     area_pct = 100 * AreaM / sum(AreaM)
   ) |>
-  arrange(pct)
+  dplyr::arrange(pct)

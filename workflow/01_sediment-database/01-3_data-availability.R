@@ -11,21 +11,17 @@ theme_set(theme_kbn())
 my_pal <- kbn_colors(n = 2)
 
 # load data ---------------------------------------------------------------
-ssd <-
-  qread("R/02_Features/data/db_ssd-hyde-tc.qs")
+ssd <- qread("R/02_Features/data/db_ssd-hyde-tc.qs")
 
-gmba <-
-  qread("R/02_Features/data/db_gmda-dem.qs")
+gmba <- qread("R/02_Features/data/db_gmda-dem.qs")
 
-ssd_ <-
-  ssd %>%
+ssd_ <- ssd %>%
   left_join(gmba, by = "id") |>
   mutate(period = ifelse(year < 1992, "XX", "XXI"))
 
 # Subset data -------------------------------------------------------------
 # Mean annual SSD
-ssd_mean_av <-
-  ssd_ |>
+ssd_mean_av <- ssd_ |>
   select(id:ssd_mean) |>
   group_by(id) |>
   mutate(ssd_a = data.table::rleid(is.na(ssd_mean))) |>
@@ -43,8 +39,7 @@ ssd_mean_av <-
   )
 
 # Max annual SSD
-ssd_max_av <-
-  ssd_ |>
+ssd_max_av <- ssd_ |>
   select(id:year, ssd_max) |>
   group_by(id) |>
   mutate(ssd_a = data.table::rleid(is.na(ssd_max))) |>
@@ -62,29 +57,29 @@ ssd_max_av <-
   )
 
 # Bind together
-ssd_viz <-
-  bind_rows(
-    ssd_mean_av, ssd_max_av
-  ) |>
+ssd_viz <- bind_rows(
+  ssd_mean_av,
+  ssd_max_av
+) |>
   group_by(id, type) |>
   mutate(n = sum(n)) |>
   ungroup()
 
-id_order <-
-  ssd_viz |>
+id_order <- ssd_viz |>
   filter(type == "SSD[mean]") |>
   distinct(id, n) |>
   arrange(desc(n))
 
 # Plot --------------------------------------------------------------------
-viz_miss <-
-  ssd_mean_av |>
+viz_miss <- ssd_mean_av |>
   mutate(id = factor(id, levels = id_order$id, ordered = T)) |>
   ggplot() +
   geom_segment(
     aes(
-      x = start, xend = end,
-      y = id, yend = id,
+      x = start,
+      xend = end,
+      y = id,
+      yend = id,
       color = type
     ),
     linewidth = 1.1,
@@ -94,8 +89,10 @@ viz_miss <-
     data = ssd_max_av |>
       mutate(id = factor(id, levels = id_order$id, ordered = T)),
     aes(
-      x = start, xend = end,
-      y = id, yend = id,
+      x = start,
+      xend = end,
+      y = id,
+      yend = id,
       color = type
     ),
     linewidth = 1.1,

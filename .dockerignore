@@ -1,0 +1,7 @@
+/data
+/figures
+/analysis
+/tables
+Dockerfile
+.dockerignore
+**/.DS_Store

@@ -12,29 +12,23 @@ clrs <- MetBrewer::met.brewer("Johnson", n = 8)
 clrs[3] <- "grey10"
 
 # Load watersheds ---------------------------------------------------------
-ws_sf <-
-  sf::st_read(
-    "data/vector/kbn_ws-predict/kbn_ws-predict.shp"
-  )
+ws_sf <- sf::st_read(
+  "data/vector/kbn_ws-predict/kbn_ws-predict.shp"
+)
 
-ws_area <-
-  data.frame(
-    river = ws_sf$river,
-    area = as.numeric(sf::st_area(ws_sf)) / 10^6
-  )
+ws_area <- data.frame(
+  river = ws_sf$river,
+  area = as.numeric(sf::st_area(ws_sf)) / 10^6
+)
 
 # Load data ---------------------------------------------------------------
-buchner_areas <-
-  qs::qread("workflow/05_trend/data/landcover_buchner2020.qs")
+buchner_areas <- qs::qread("workflow/05_trend/data/landcover_buchner2020.qs")
 
-hyde_df <-
-  qs::qread("workflow/05_trend/data/hyde_2023.qs")
+hyde_df <- qs::qread("workflow/05_trend/data/hyde_2023.qs")
 
-glims_df <-
-  qs::qread("workflow/05_trend/data/glims.qs")
+glims_df <- qs::qread("workflow/05_trend/data/glims.qs")
 
-wc_all <-
-  qs::qread("workflow/05_trend/data/worldclim.qs") |>
+wc_all <- qs::qread("workflow/05_trend/data/worldclim.qs") |>
   pluck(2) |>
   select(river, date, prec) |>
   group_by(river, Year = year(date)) |>
@@ -43,8 +37,7 @@ wc_all <-
   )
 
 # Extend the Cropland Area ------------------------------------------------
-hyde_lm <-
-  buchner_areas |>
+hyde_lm <- buchner_areas |>
   left_join(
     hyde_df |>
       select(river, Year = year, cropland),
@@ -52,8 +45,7 @@ hyde_lm <-
   ) %>%
   lm(CroplandArea ~ cropland, data = .)
 
-buchner_hyde <-
-  hyde_df |>
+buchner_hyde <- hyde_df |>
   select(river, Year = year, cropland) |>
   group_by(river) |>
   complete(Year = seq(1920, 2021, by = 1)) |>
@@ -73,8 +65,7 @@ buchner_hyde <-
   )
 
 # Quick CUSUM -------------------------------------------------------------
-hyde_cusum <-
-  hyde_df |>
+hyde_cusum <- hyde_df |>
   select(river, Year = year, cropland) |>
   group_by(river) |>
   complete(Year = seq(1920, 2021, by = 5)) |>
@@ -86,15 +77,14 @@ hyde_cusum <-
   mutate(CDC = cumsum((Area - mean(Area)) / sd(Area))) |>
   ungroup()
 
-buchner_cusum <-
-  buchner_areas |>
+buchner_cusum <- buchner_areas |>
   group_by(river) |>
   complete(Year = seq(1987, 2015, by = 2)) |>
   arrange(Year, .by_group = TRUE) |>
   mutate(
     across(
       c(CroplandArea, ForestArea),
-      ~ na_interpolation(.x)
+      ~na_interpolation(.x)
     )
   ) |>
   ungroup() |>
@@ -103,16 +93,14 @@ buchner_cusum <-
   mutate(CDC = cumsum((Area - mean(Area)) / sd(Area))) |>
   ungroup()
 
-worldclim_cusum <-
-  wc_all |>
+worldclim_cusum <- wc_all |>
   filter(between(Year, 1970, 2021)) |>
   gather(Type, Var, -river, -Year) |>
   group_by(river, Type) |>
   mutate(CDC = cumsum((Var - mean(Var)) / sd(Var))) |>
   ungroup()
 
-glims_cusum <-
-  glims_df |>
+glims_cusum <- glims_df |>
   filter(GlimsArea != 0) |>
   group_by(river) |>
   complete(Year = seq(1960, 2020, by = 5)) |>
@@ -128,16 +116,14 @@ glims_cusum <-
   mutate(CDC = cumsum((Var - mean(Var)) / sd(Var))) |>
   ungroup()
 
-buchner_hyde_cusum <-
-  buchner_hyde |>
+buchner_hyde_cusum <- buchner_hyde |>
   select(river, Year, CroplandArea) |>
   gather(Type, Var, -river, -Year) |>
   group_by(river, Type) |>
   mutate(CDC = cumsum((Var - mean(Var)) / sd(Var))) |>
   ungroup()
 
-glims_mean <-
-  glims_cusum |>
+glims_mean <- glims_cusum |>
   group_by(Year) |>
   ggdist::mean_qi(CDC) |>
   select(Year:.upper) |>
@@ -147,22 +133,33 @@ glims_mean <-
     .before = 1
   )
 
-watershed_cusum_plot <-
-  buchner_cusum |>
+watershed_cusum_plot <- buchner_cusum |>
   bind_rows(worldclim_cusum) |>
   bind_rows(glims_mean) |>
   mutate(
     river = factor(
       river,
       levels = c(
-        "Apchas", "Belaya", "Kuban", "Laba",
-        "Marta", "Psekups", "Pshish", "Shunduk", "GLIMS"
+        "Apchas",
+        "Belaya",
+        "Kuban",
+        "Laba",
+        "Marta",
+        "Psekups",
+        "Pshish",
+        "Shunduk",
+        "GLIMS"
       ),
       labels = c(
-        "(a) Apchas", "(b) Belaya (No. 83361)",
-        "(c) Kuban (No. 83174)", "(d) Laba (No. 83314)",
-        "(e) Marta", "(f) Psekups", "(g) Pshish (No. 83387)",
-        "(h) Shunduk", "(i) Belaya, Kuban and Laba average"
+        "(a) Apchas",
+        "(b) Belaya (No. 83361)",
+        "(c) Kuban (No. 83174)",
+        "(d) Laba (No. 83314)",
+        "(e) Marta",
+        "(f) Psekups",
+        "(g) Pshish (No. 83387)",
+        "(h) Shunduk",
+        "(i) Belaya, Kuban and Laba average"
       )
     )
   ) |>
@@ -228,34 +225,41 @@ watershed_cusum_plot
 # Trend analysis -----------------------------------------------------------
 library(trend)
 
-zonal_pt <-
-  buchner_cusum |>
+zonal_pt <- buchner_cusum |>
   rename(Var = Area) |>
   bind_rows(worldclim_cusum) |>
   bind_rows(glims_cusum) |>
   group_by(river, Type) |>
   nest() |>
-  mutate(pt = map(
-    data,
-    ~ trend::pettitt.test(.x$Var)$estimate
-  )) |>
-  mutate(p = map(
-    data,
-    ~ trend::pettitt.test(.x$Var)$p.value
-  )) |>
-  mutate(years = map(
-    data, ~ sort(.x$Year)
-  )) |>
+  mutate(
+    pt = map(
+      data,
+      ~trend::pettitt.test(.x$Var)$estimate
+    )
+  ) |>
+  mutate(
+    p = map(
+      data,
+      ~trend::pettitt.test(.x$Var)$p.value
+    )
+  ) |>
+  mutate(
+    years = map(
+      data,
+      ~sort(.x$Year)
+    )
+  ) |>
   mutate(
     m = map_dbl(
-      data, ~ mean(.x$Var)
+      data,
+      ~mean(.x$Var)
     )
   ) |>
   unnest(cols = c(pt, p)) |>
   select(-data) |>
   ungroup() |>
   mutate(
-    break_year = map2_dbl(years, pt, ~ .x[.y])
+    break_year = map2_dbl(years, pt, ~.x[.y])
   ) |>
   select(-years)
 
@@ -268,41 +272,40 @@ zonal_pt |>
 library(ChangePointTaylor)
 
 set.seed(1234)
-taylor_res <-
-  buchner_cusum |>
+taylor_res <- buchner_cusum |>
   rename(Var = Area) |>
   group_by(river, Type) |>
   nest() |>
-  mutate(taylor = map(
-    data,
-    ~ change_point_analyzer(
-      x = .x$Var,
-      labels = .x$Year,
-      # min_candidate_conf = 0.90,
-      # min_tbl_conf = 0.95,
-      n_bootstraps = 5000,
-      CI = 0.95
+  mutate(
+    taylor = map(
+      data,
+      ~change_point_analyzer(
+        x = .x$Var,
+        labels = .x$Year,
+        # min_candidate_conf = 0.90,
+        # min_tbl_conf = 0.95,
+        n_bootstraps = 5000,
+        CI = 0.95
+      )
     )
-  )) |>
+  ) |>
   dplyr::select(-data) |>
   unnest(cols = c(taylor)) |>
   ungroup()
 
-taylor_ci <-
-  taylor_res |>
+taylor_ci <- taylor_res |>
   mutate(
     label_low = str_split(`CI (95%)`, "-", simplify = TRUE)[, 1],
     label_upper = str_split(`CI (95%)`, "-", simplify = TRUE)[, 2],
   ) |>
-  mutate(across(contains("label_"), ~ parse_number(.x)))
+  mutate(across(contains("label_"), ~parse_number(.x)))
 
 taylor_ci |>
   filter(Type == "CroplandArea") |>
   count(label, sort = TRUE)
 
 # Tables ----
-taylor_wide <-
-  taylor_ci |>
+taylor_wide <- taylor_ci |>
   transmute(
     id = river,
     Type = case_when(
@@ -320,8 +323,7 @@ taylor_wide <-
   unnest(c(FA)) |>
   unnest(c(CA))
 
-zonal_pt_wide <-
-  zonal_pt |>
+zonal_pt_wide <- zonal_pt |>
   transmute(
     id = river,
     Type = case_when(
@@ -444,18 +446,20 @@ wc_all |>
   filter(river == "Pshish") |>
   group_by(river) |>
   nest() |>
-  mutate(taylor = map(
-    data,
-    ~ change_point_analyzer(
-      x = .x$Precipitation,
-      labels = .x$Year,
-      min_candidate_conf = 0.3,
-      min_tbl_conf = 0.5,
-      n_bootstraps = 1000
-      # CI = 0.95
-      # method = "CUSUM"
+  mutate(
+    taylor = map(
+      data,
+      ~change_point_analyzer(
+        x = .x$Precipitation,
+        labels = .x$Year,
+        min_candidate_conf = 0.3,
+        min_tbl_conf = 0.5,
+        n_bootstraps = 1000
+        # CI = 0.95
+        # method = "CUSUM"
+      )
     )
-  )) |>
+  ) |>
   dplyr::select(-data) |>
   unnest(cols = c(taylor)) |>
   ungroup()

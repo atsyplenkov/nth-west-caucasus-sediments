@@ -4,15 +4,13 @@ library(qs)
 source("R/funs_utils.R")
 
 # 1) Load data ------------------------------------------------------------
-rtop_data <-
-  qs::qread(
-    "workflow/02_rtop-interpolation/data/rtop_cv_7jan23.qs"
-  )
+rtop_data <- qs::qread(
+  "workflow/02_rtop-interpolation/data/rtop_cv_7jan23.qs"
+)
 
-bedload_model <-
-  qs::qread(
-    "workflow/02_rtop-interpolation/data/bedload_model.qs"
-  )
+bedload_model <- qs::qread(
+  "workflow/02_rtop-interpolation/data/bedload_model.qs"
+)
 
 # I was too lazy to properly call this nls model in the
 # future pipeline.
@@ -21,8 +19,7 @@ bedload_model <-
 summary(bedload_model)
 
 # 2) Tidy data ------------------------------------------------------------
-rtop_pred <-
-  rtop_data |>
+rtop_pred <- rtop_data |>
   select(.pred_df) |>
   unnest(cols = c(.pred_df)) |>
   transmute(
@@ -39,23 +36,22 @@ rtop_pred <-
 # 3) Inflow Summary -------------------------------------------------------
 # Subset only those gauging stations that have
 # inflows directly into the Krasnodar reservoir.
-krasn_inflow <-
-  rtop_pred |>
+krasn_inflow <- rtop_pred |>
   filter(
-    id %in% c(
-      "83174",
-      "83314",
-      "83361",
-      "83387",
-      "Marta",
-      "Apchas",
-      "Shunduk",
-      "Psekups"
-    )
+    id %in%
+      c(
+        "83174",
+        "83314",
+        "83361",
+        "83387",
+        "Marta",
+        "Apchas",
+        "Shunduk",
+        "Psekups"
+      )
   )
 
-krasn_inflow_summary <-
-  krasn_inflow |>
+krasn_inflow_summary <- krasn_inflow |>
   mutate(
     year_period = case_when(
       between(year, 2005, 2016) ~ "2005-2016",
