@@ -3,21 +3,21 @@ library(tidyverse)
 library(qs)
 library(here)
 
-source(here("R", "funs_ggplot2.R"))
+source(here::here("R", "funs_ggplot2.R"))
 
 # ggplot2 setup -----------------------------------------------------------
-theme_set(theme_kbn())
+ggplot2::theme_set(theme_kbn())
 
 my_pal <- kbn_colors(n = 2)
 
 # load data ---------------------------------------------------------------
-ssd <- qread("R/02_Features/data/db_ssd-hyde-tc.qs")
+ssd <- qs::qread("R/02_Features/data/db_ssd-hyde-tc.qs")
 
-gmba <- qread("R/02_Features/data/db_gmda-dem.qs")
+gmba <- qs::qread("R/02_Features/data/db_gmda-dem.qs")
 
 ssd_ <- ssd %>%
-  left_join(gmba, by = "id") |>
-  mutate(period = ifelse(year < 1992, "XX", "XXI"))
+  dplyr::left_join(gmba, by = "id") |>
+  dplyr::mutate(period = ifelse(year < 1992, "XX", "XXI"))
 
 # Subset data -------------------------------------------------------------
 # Mean annual SSD

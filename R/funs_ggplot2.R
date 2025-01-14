@@ -3,6 +3,7 @@ library(ggtext)
 library(showtext)
 font_add_google("Merriweather", "Merriweather")
 showtext_auto()
+showtext::showtext_opts(dpi = 500)
 
 # Make labels use Barlow by default
 ggplot2::update_geom_defaults(
