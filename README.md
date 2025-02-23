@@ -3,16 +3,17 @@
 # Impacts of post-Soviet land-use transformation on sediment dynamics in the Western Caucasus
 ![](/figures/graphical-abstract/graphical_abstract_rivers.png)
 
-This repository contains the main processing steps to explore sediment load temporal changes in the Kuban River basin (Western Caucasus) during the 1975-2020 period. It is meant to accompany a journal article (Tsyplenkov et al., *In print*). This study is part of the Russian Science Foundation project No. 19-17-00181: "Quantitative assessment of the slope sediment flux and its changes in the Holocene for the Caucasus mountain rivers".
+This repository contains the main processing steps to explore sediment load temporal changes in the Kuban River basin (Western Caucasus) during the 1975-2020 period. It is meant to accompany a journal article (Tsyplenkov et al., [2025](https://www.sciencedirect.com/science/article/pii/S0022169425003038)).
 
 For a deep introduction to the study, please refer to:
->Tsyplenkov A, Grachev A, Yermolaev O, Golosov V. **Impacts of post-Soviet land-use transformation on sediment dynamics in the Western Caucasus**. *Journal of Hydrology*, *In print*.
+>Tsyplenkov A, Grachev A, Yermolaev O, Golosov V. **Impacts of post-Soviet land-use transformation on sediment dynamics in the Western Caucasus**. *Journal of Hydrology*, 132965, 2025. doi: 10.1016/j.jhydrol.2025.132965
 
 # Highlights
+
 > - This study investigates sediment transport dynamics over the last five decades in the western Greater Caucasus, focusing on the Krasnodar Reservoir, using repeated bathymetric surveys and gauging station measurements.
 > - The results indicate a progressive increase in erosion rates from 1975 to the period of 1993–2005, followed by a subsequent decline that persists to the present day.
 > - The collapse of the Soviet Union and subsequent land-use changes, especially in arable and pastoral lands, were identified as primary drivers of sediment transport alteration, with significant shifts observed between 1995 and 2000.
-> - The Top-Kriging modelling technique was effectively used to extend suspended sediment yield (SSY) records and predict SSY in ungauged basins, demonstrating good accuracy (NSE = 0.63) in cross-validation and comparison with independent reservoir sedimentation records
+> - The Top-Kriging modelling technique was effectively used to extend suspended sediment yield (SSY) records and predict SSY in ungauged basins, demonstrating good accuracy (NSE = 0.63) in cross-validation and comparison with independent reservoir sedimentation records.
 
 # Documentation
 
