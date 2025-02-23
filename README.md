@@ -1,4 +1,4 @@
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.12816100.svg)](https://doi.org/10.5281/zenodo.12816100)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.12816100.svg)](https://doi.org/10.5281/zenodo.12816100) [![DOI](https://img.shields.io/badge/DOI-10.1016%2Fj.jhydrol.2025.132965-success)](https://www.sciencedirect.com/science/article/pii/S0022169425003038)
 
 # Impacts of post-Soviet land-use transformation on sediment dynamics in the Western Caucasus
 ![](/figures/graphical-abstract/graphical_abstract_rivers.png)
