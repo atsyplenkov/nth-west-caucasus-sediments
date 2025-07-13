@@ -6,83 +6,85 @@ library(patchwork)
 library(yardstick)
 library(tidyhydro)
 
-source(here("R", "funs_rtop.R"))
-source(here("R", "funs_ggplot2.R"))
+source(here::here("R", "funs_rtop.R"))
+source(here::here("R", "funs_ggplot2.R"))
 
-theme_set(theme_kbn())
+ggplot2::theme_set(theme_kbn())
 
 ## Metrics
 # source("R/funs_utils.R")
 
-val_metrics <- metric_set(ccc, rsq, nse)
+val_metrics <- yardstick::metric_set(ccc, rsq, nse)
 
 # 1) Point data ---------------------------------------------------------
-kbn_gages <- st_read(
-  here("data", "vector", "kbn_gages", "kbn_gages.shp"),
+kbn_gages <- sf::st_read(
+  here::here("data", "vector", "kbn_gages", "kbn_gages.shp"),
   query = "SELECT * FROM kbn_gages WHERE region = 'nw'"
 ) |>
-  mutate(id = as.character(id))
+  dplyr::mutate(id = as.character(id))
 
 # Keep only "pristine" gages
 rtop_ids <- kbn_gages |>
-  filter(is.na(status2)) |>
-  filter(id != "83361") |> # for validation
-  pull(id)
+  dplyr::filter(is.na(status2)) |>
+  dplyr::filter(id != "83361") |> # for validation
+  dplyr::pull(id)
 
 north_ids <- kbn_gages |>
-  pull(id)
+  dplyr::pull(id)
 
 # 2) Watersheds -----------------------------------------------------------
-ws_ter <- st_read(
-  here("data/vector/ter_ws-6931/ter_ws-6931.shp")
+ws_ter <- sf::st_read(
+  here::here("data/vector/ter_ws-6931/ter_ws-6931.shp"),
+  quiet = TRUE
 ) |>
-  filter(is.na(status2)) |>
-  transmute(
+  dplyr::filter(is.na(status2)) |>
+  dplyr::transmute(
     id = label,
     area
   )
 
-ws_all <- st_read(
-  here("data/vector/kbn_ws_30dec/kbn_ws_30dec.shp"),
-  query = "SELECT id, area FROM kbn_ws_30dec"
+ws_all <- sf::st_read(
+  here::here("data/vector/kbn_ws_30dec/kbn_ws_30dec.shp"),
+  query = "SELECT id, area FROM kbn_ws_30dec",
+  quiet = TRUE
 ) |>
-  mutate(
+  dplyr::mutate(
     id = as.character(id)
   ) |>
-  filter(id %in% north_ids) |>
-  st_transform(6931) |>
-  bind_rows(ws_ter) |>
-  ms_simplify(keep = 0.3)
+  dplyr::filter(id %in% north_ids) |>
+  sf::st_transform(6931) |>
+  dplyr::bind_rows(ws_ter) |>
+  rmapshaper::ms_simplify(keep = 0.3)
 
-ws_new <- st_read(
-  here("data/vector/kbn_ws-predict/kbn_ws-predict.shp"),
+ws_new <- sf::st_read(
+  here::here("data/vector/kbn_ws-predict/kbn_ws-predict.shp"),
   query = "SELECT * FROM \"kbn_ws-predict\" WHERE id IS NULL"
 ) |>
-  st_transform(6931) |>
-  transmute(
+  sf::st_transform(6931) |>
+  dplyr::transmute(
     id = river,
     area = a
   ) |>
-  rename(geometry = "_ogr_geometry_")
+  dplyr::rename(geometry = "_ogr_geometry_")
 
 # Observed data
 ws_obs <- ws_all |>
-  filter(id %in% rtop_ids | str_detect(id, "-"))
+  dplyr::filter(id %in% rtop_ids | stringr::str_detect(id, "-"))
 
 # Predict to
 ws_pred <- ws_all |>
-  filter(!str_detect(id, "-")) |>
-  bind_rows(ws_new)
+  dplyr::filter(!stringr::str_detect(id, "-")) |>
+  dplyr::bind_rows(ws_new)
 
 # Original Gauging station density
 region_area_original <- ws_obs |>
-  filter(!str_detect(id, "-")) |>
+  dplyr::filter(!stringr::str_detect(id, "-")) |>
   terra::vect() |>
   terra::aggregate() |>
   terra::expanse("km")
 
 ws_obs |>
-  filter(!str_detect(id, "-")) |>
+  dplyr::filter(!stringr::str_detect(id, "-")) |>
   nrow() |>
   magrittr::divide_by(region_area_original / 10^3)
 # > 1.560525
@@ -98,31 +100,36 @@ nrow(ws_obs) / (region_area / 10^3)
 
 # 3) Sediment data --------------------------------------------------------
 ter_data <- readxl::read_excel(
-  here("data/hydro/terek_SY.xlsx"),
+  here::here("data/hydro/terek_SY.xlsx"),
   sheet = "data_kgs",
   range = "A2:AW96"
 ) |>
-  rename(year = 1) |>
-  gather(id, ssd_mean, -year) |>
-  relocate(year, .after = id)
+  dplyr::rename(year = 1) |>
+  tidyr::gather(id, ssd_mean, -year) |>
+  dplyr::relocate(year, .after = id)
 
 sed_data <- qs::qread(
-  here("workflow", "01_sediment-database", "data", "SSD-yr-all_21dec23.qs")
+  here::here(
+    "workflow",
+    "01_sediment-database",
+    "data",
+    "SSD-yr-all_21dec23.qs"
+  )
 ) |>
-  mutate(id = as.character(id)) |>
-  select(id:ssd_mean) |>
-  bind_rows(
+  dplyr::mutate(id = as.character(id)) |>
+  dplyr::select(id:ssd_mean) |>
+  dplyr::bind_rows(
     ter_data
   )
 
 # 4) Merge data -----------------------------------------------------------
 ws_obs_sy <- ws_obs |>
-  left_join(
+  dplyr::left_join(
     sed_data,
-    by = join_by(id)
+    by = dplyr::join_by(id)
   ) |>
-  mutate(ssy = ssd_mean * 31536 / area) |>
-  drop_na(ssy)
+  dplyr::mutate(ssy = ssd_mean * 31536 / area) |>
+  tidyr::drop_na(ssy)
 
 # BoxCox transformation
 # To get back to normal values use
@@ -138,46 +145,80 @@ boxcox_l
 # > 0.05
 
 ws_obs_box <- ws_obs_sy |>
-  mutate(obs = ssy^boxcox_l)
+  dplyr::mutate(obs = ssy^boxcox_l)
 
 # Viz Miss -----------------------------------------------------------
 ssd_miss <- ws_obs_sy |>
-  st_drop_geometry() |>
-  as_tibble() |>
-  mutate(
+  sf::st_drop_geometry() |>
+  dplyr::as_tibble() |>
+  dplyr::mutate(
     Region = ifelse(
-      str_detect(id, "-"),
+      stringr::str_detect(id, "-"),
       "Terek River basin",
       "Krasnodar Reservoir basin"
     )
   ) |>
-  group_by(Region, id) |>
-  mutate(ssd_a = data.table::rleid(is.na(ssd_mean))) |>
-  filter(!is.na(ssd_mean)) |>
-  group_by(Region, id, ssd_a) |>
-  summarise(
-    start = first(year),
-    end = last(year),
-    n = n(),
+  dplyr::group_by(Region, id) |>
+  dplyr::mutate(ssd_a = data.table::rleid(is.na(ssd_mean))) |>
+  dplyr::filter(!is.na(ssd_mean)) |>
+  dplyr::group_by(Region, id, ssd_a) |>
+  dplyr::summarise(
+    start = dplyr::first(year),
+    end = dplyr::last(year),
+    n = dplyr::n(),
     .groups = "drop"
   )
 
-id_order <- ssd_miss |>
-  distinct(Region, id, n) |>
-  group_by(Region) |>
-  arrange(desc(n), .by_group = TRUE)
+ssd_miss2 <- ws_obs_sy |>
+  sf::st_drop_geometry() |>
+  dplyr::as_tibble() |>
+  dplyr::mutate(
+    Region = ifelse(
+      stringr::str_detect(id, "-"),
+      "Terek River basin",
+      "Krasnodar Reservoir basin"
+    )
+  ) |>
+  dplyr::group_by(Region, id) |>
+  arrange(year, .by_group = TRUE) |>
+  complete(year = seq(min(year), max(year))) |>
+  # For vizualizatuion purtposes
+  mutate(
+    ssd_mean = imputeTS::na_mean(ssd_mean, maxgap = 5)
+  ) |>
+  dplyr::mutate(
+    ssd_a = data.table::rleid(is.na(ssd_mean))
+  ) |>
+  dplyr::filter(!is.na(ssd_mean)) |>
+  dplyr::group_by(Region, id, ssd_a) |>
+  dplyr::summarise(
+    start = dplyr::first(year),
+    end = dplyr::last(year),
+    n = dplyr::n(),
+    .groups = "drop"
+  )
+
+id_order <- ssd_miss2 |>
+  dplyr::distinct(Region, id, n) |>
+  dplyr::group_by(Region) |>
+  dplyr::arrange(dplyr::desc(n), .by_group = TRUE)
 
 id_order |>
-  count(Region)
+  dplyr::count(Region)
 
 # Figure 2
-# Saved as svg via httpgd
-ssd_miss |>
-  filter(n > 1) |>
-  mutate(id = factor(id, levels = id_order$id, ordered = TRUE)) |>
-  ggplot() +
-  geom_segment(
-    aes(
+fig02 <- ssd_miss2 |>
+  dplyr::filter(id != "83134") |>
+  dplyr::mutate(
+    id = factor(
+      id,
+      levels = unique(id_order$id),
+      ordered = TRUE
+    )
+  ) |>
+  ggplot2::ggplot() +
+  ggplot2::geom_segment(
+    ggplot2::aes(
       x = start,
       xend = end,
       y = id,
@@ -185,21 +226,34 @@ ssd_miss |>
     ),
     linewidth = 1.1
   ) +
-  scale_y_discrete(limits = rev) +
-  scale_x_continuous(
-    # limits = c(-24, 5),
+  ggplot2::scale_y_discrete(limits = rev) +
+  ggplot2::scale_x_continuous(
     breaks = scales::breaks_pretty(10)
   ) +
-  scale_color_manual(
+  ggplot2::scale_color_manual(
     labels = scales::parse_format()
   ) +
-  labs(
+  ggplot2::labs(
     y = "Gauging station ID",
     x = "",
     color = NULL
   ) +
-  facet_wrap(~Region, scales = "free_y", ncol = 2) +
-  theme(panel.grid.major.y = element_line(color = "grey90"))
+  ggplot2::facet_wrap(
+    ~Region,
+    scales = "free_y",
+    ncol = 2
+  ) +
+  ggplot2::theme(
+    panel.grid.major.y = ggplot2::element_line(color = "grey90")
+  )
+
+mw_save(
+  "figures/fig2_data-availability_v1.2.png",
+  fig02,
+  h = 13,
+  w = 21,
+  dpi = 500
+)
 
 # Gage station description ----
 # Gauging station names
