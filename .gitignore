@@ -6,3 +6,4 @@
 /data/raster/imageries_crs/
 /renv
 *.psd
+.Renviron
